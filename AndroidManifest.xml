@@ -19,6 +19,10 @@
 	<!-- 短信读写权限 -->   
 	<uses-permission android:name="android.permission.READ_SMS" />
 	<uses-permission android:name="android.permission.WRITE_SMS" />
+	<!-- 拨打电话权限 -->  
+	<uses-permission android:name="android.permission.CALL_PHONE"/>    
+	<uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    	<uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
 
     <application
         android:allowBackup="true"
@@ -34,6 +38,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <receiver android:name=".CloudPhoneReceiver">
+        	<intent-filter>
+			<action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+        	</intent-filter>
+        </receiver>
     </application>
 
 </manifest>

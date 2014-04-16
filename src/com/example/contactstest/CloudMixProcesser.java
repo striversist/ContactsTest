@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
 public class CloudMixProcesser {
@@ -32,6 +34,7 @@ public class CloudMixProcesser {
 		for (CloudContact contact : contacts.values()) {
 			Log.d("", contact.toString());
 		}
+//		call("15972072439");
 	}
 	
 	/**
@@ -54,5 +57,14 @@ public class CloudMixProcesser {
 		}
 		
 		return contactsProcesser.getContactsByNumber(numberList);
+	}
+	
+	public void call(String number) {
+		if (number == null)
+			return;
+		
+		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + number));
+		dialIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		mContext.startActivity(dialIntent);
 	}
 }
