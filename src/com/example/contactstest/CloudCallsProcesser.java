@@ -16,6 +16,10 @@ import android.util.Log;
 
 public class CloudCallsProcesser {
 	private static final String TAG = "CloudCallsProcesser";
+	public static final int CALL_TYPE_ALL			= 0;
+	public static final int CALL_TYPE_INCOMMING 	= Calls.INCOMING_TYPE;
+	public static final int CALL_TYPE_OUTCOMMING 	= Calls.OUTGOING_TYPE;
+	public static final int CALL_TYPE_MISSED 		= Calls.MISSED_TYPE;
 	private Context mContext;
 	
 	public CloudCallsProcesser(Context context) {
