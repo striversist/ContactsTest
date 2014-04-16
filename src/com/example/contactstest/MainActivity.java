@@ -36,14 +36,12 @@ public class MainActivity extends Activity {
 	}
 	
 	private void test() {
-//		CloudContactsProcesser processer = new CloudContactsProcesser();
-//		processer.setContext(getApplicationContext());
+//		CloudContactsProcesser processer = new CloudContactsProcesser(getApplicationContext());
 //		processer.runTest();
-		
-//		CloudCallsProcesser processer = new CloudCallsProcesser();
-//		processer.setContext(getApplicationContext());
+//		
+//		CloudCallsProcesser processer = new CloudCallsProcesser(getApplicationContext());
 //		processer.runTest();
-		
+//		
 //		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
 //		processer.runTest();
 		

@@ -34,6 +34,11 @@ public class CloudMixProcesser {
 		}
 	}
 	
+	/**
+	 * 根据对话信息获取相应的联系人（注意：对于陌生的短信对话没有相应的联系人）
+	 * @param threadIdList
+	 * @return key-threadId
+	 */
 	private HashMap<String, CloudContact> getThreadContacts(List<String> threadIdList) {
 		checkInitialized();
 		if (threadIdList == null)
