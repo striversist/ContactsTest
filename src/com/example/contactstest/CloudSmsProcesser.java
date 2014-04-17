@@ -1,8 +1,6 @@
 package com.example.contactstest;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,6 +23,7 @@ public class CloudSmsProcesser {
 	public static final String SMS_URI_FAILED 	= "content://sms/failed";
 	public static final String SMS_URI_QUEUED 	= "content://sms/queued";
 	public static final String SMS_URI_CANONICAL_ADDRESSES = "content://mms-sms/canonical-addresses";
+	public static final String SMS_URI_THREADS 	= "content://mms-sms/conversations?simple=true";
 	
 	public static final String COL_ID 			= "_id";
 	public static final String COL_THREAD_ID 	= "thread_id";
@@ -97,8 +96,9 @@ public class CloudSmsProcesser {
 		
 		LinkedHashMap<String, CloudSmsThread> threads = new LinkedHashMap<String, CloudSmsThread>();
 		ContentResolver resolver = mContext.getContentResolver();
-		Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[] { "* from threads--" },
-				where, null, "date desc");	// Note: 这里的orderBy好像不起作用，需要重新排序
+		Cursor cursor = resolver.query(Uri.parse(SMS_URI_THREADS), 
+				new String[] { COL_ID, COL_DATE, COL_MSG_COUNT, COL_READ, COL_SNIPPET, COL_RECIPIENT_IDS },
+				where, null, "date desc");
 		if (cursor == null) {
 			return null;
 		}
@@ -113,9 +113,7 @@ public class CloudSmsProcesser {
 			if (!cursor.moveToPosition(startPos))
 				return null;
 			
-			// Note: 由于orderBy无效，这里重新按date排序
 			List<CloudSmsThread> threadList = new ArrayList<CloudSmsThread>();
-			List<String> threadIdList = new ArrayList<String>();
 			do {
 				CloudSmsThread thread = new CloudSmsThread();
 				thread.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
@@ -126,7 +124,6 @@ public class CloudSmsProcesser {
 				String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
 				thread.setRecipientIds(recipientIds.split(" "));
 				threadList.add(thread);
-				threadIdList.add(thread.getId());
 			} while (cursor.moveToNext() && (threads.size() < num || num == 0));
 			
 			// 获取对应的电话号码
@@ -138,13 +135,6 @@ public class CloudSmsProcesser {
 					}
 				}
 			}
-			
-			Collections.sort(threadList, new Comparator<CloudSmsThread>() {
-				@Override
-				public int compare(CloudSmsThread lhs, CloudSmsThread rhs) {
-					return Long.valueOf(lhs.getDate()).compareTo(Long.valueOf(rhs.getDate())) * (-1);	// 降序
-				}
-			});
 			
 			for (CloudSmsThread thread : threadList) {
 				threads.put(thread.getId(), thread);
@@ -168,8 +158,9 @@ public class CloudSmsProcesser {
 		LinkedHashMap<String, CloudSmsThread> threads = new LinkedHashMap<String, CloudSmsThread>();
 		ContentResolver resolver = mContext.getContentResolver();
 		String where = CloudContactUtils.joinWhere(COL_ID, threadIdList);
-		Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[] { "* from threads--" },
-				where, null, "date desc");	// Note: 这里的orderBy好像不起作用，需要重新排序
+		Cursor cursor = resolver.query(Uri.parse(SMS_URI_THREADS), 
+				new String[] { COL_ID, COL_DATE, COL_MSG_COUNT, COL_READ, COL_SNIPPET, COL_RECIPIENT_IDS },
+				where, null, "date desc");
 		if (cursor == null) {
 			return null;
 		}
