@@ -14,6 +14,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 
 public class CloudSmsProcesser {
 	public static final String SMS_URI_ALL 		= "content://sms/";
@@ -67,6 +68,14 @@ public class CloudSmsProcesser {
 		List<String> numberList = new ArrayList<String>();
 		for (String number : addresses.values()) {
 			numberList.add(number);
+		}
+		
+		int count = getSmsCountInThread(SMS_URI_ALL, "94");
+		Log.d("", "" + count);
+		
+		HashMap<String, CloudSms> smss = getSmsInThread(SMS_URI_ALL, "94", 0, 0);
+		for (CloudSms sms : smss.values()) {
+			Log.d("", sms.toString());
 		}
 	}
 	
@@ -223,6 +232,54 @@ public class CloudSmsProcesser {
 		}
 		
 		return addresses;
+	}
+	
+	public int getSmsCountInThread(String threadId) {
+		return getSmsCountInThread(SMS_URI_ALL, threadId);
+	}
+	
+	/**
+	 * 获取一个sms thread中包含多少条短信记录
+	 * @param uri
+	 * @param threadId
+	 * @return 短信条数
+	 */
+	private int getSmsCountInThread(String uri, String threadId) {
+		checkInitialized();
+		if (threadId == null)
+			return 0;
+		
+		ContentResolver resolver = mContext.getContentResolver();
+		String where = COL_THREAD_ID + "=" + threadId;
+		Cursor cursor = resolver.query(Uri.parse(uri), new String[]{COL_ID}, 
+				where, null, null);
+		if (cursor == null)
+			return 0;
+		
+		int count = cursor.getCount();
+		cursor.close();
+		return count;
+	}
+	
+	public HashMap<String, CloudSms> getSmsInThread(String threadId, int startPos, int num) {
+		return getSmsInThread(SMS_URI_ALL, threadId, startPos, num);
+	}
+	
+	/**
+	 * 获取指定threadId的短信记录（按时间顺序有新到老的顺序）
+	 * @param uri
+	 * @param threadId
+	 * @param startPos
+	 * @param num
+	 * @return sms record; or null
+	 * key-id
+	 */
+	private HashMap<String, CloudSms> getSmsInThread(String uri, String threadId, int startPos, int num) {
+		checkInitialized();
+		if (uri == null || threadId == null || startPos < 0 || num < 0)
+			return null;
+		
+		return getSms(uri, startPos, num, COL_THREAD_ID + "=" + threadId, null);
 	}
 	
 	/**
