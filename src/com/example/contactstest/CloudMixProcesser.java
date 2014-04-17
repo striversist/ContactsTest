@@ -2,9 +2,11 @@ package com.example.contactstest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.example.contactstest.data.CloudContact;
+import com.example.contactstest.data.CloudContactSmsThread;
 import com.example.contactstest.data.CloudSmsThread;
 
 import android.content.Context;
@@ -13,7 +15,7 @@ import android.net.Uri;
 import android.util.Log;
 
 public class CloudMixProcesser {
-
+	private static final String TAG = "CloudMixProcesser";
 	private Context mContext;
 	public CloudMixProcesser(Context context) {
 		assert (context != null);
@@ -27,17 +29,17 @@ public class CloudMixProcesser {
     }
 	
 	public void runTest() {
-		CloudSmsProcesser smsProcesser = new CloudSmsProcesser(mContext);
-		HashMap<String, CloudSmsThread> threads = smsProcesser.getSmsThreads(0, 0, null);
-		List<String> threadIdList = new ArrayList<String>();
-		for (CloudSmsThread thread : threads.values()) {
-			threadIdList.add(thread.getId());
-		}
-		HashMap<String, CloudContact> contacts = getThreadContacts(threadIdList);
-		for (CloudContact contact : contacts.values()) {
-			Log.d("", contact.toString());
-		}
 //		call("15972072439");
+		
+		HashMap<String, CloudContactSmsThread> contactThreads = getContactThreads(0, 0);
+		for (CloudContactSmsThread contactThread : contactThreads.values()) {
+			if (contactThread.hasContact()) {
+				Log.d(TAG, "conatact name: " + contactThread.getContact().getName());
+			}
+			Log.d(TAG, "number: " + contactThread.getSmsThread().getNumberList().get(0));
+			Log.d(TAG, "snippet: " + contactThread.getSmsThread().getSnippet());
+			Log.d(TAG, "--------------------------------------");
+		}
 	}
 	
 	/**
@@ -45,21 +47,40 @@ public class CloudMixProcesser {
 	 * @param threadIdList
 	 * @return key-threadId
 	 */
-	private HashMap<String, CloudContact> getThreadContacts(List<String> threadIdList) {
+	private HashMap<String, CloudContactSmsThread> getContactThreads(int startPos, int num) {
 		checkInitialized();
-		if (threadIdList == null)
+		if (startPos < 0 || num < 0)
 			return null;
 		
-		CloudContactsProcesser contactsProcesser = new CloudContactsProcesser(mContext);
 		CloudSmsProcesser smsProcesser = new CloudSmsProcesser(mContext);
+		CloudContactsProcesser contactsProcesser = new CloudContactsProcesser(mContext);
+		HashMap<String, CloudSmsThread> threads = smsProcesser.getSmsThreads(startPos, num, null);
+		if (threads == null)
+			return null;
 		
-		HashMap<String, String> addresses = smsProcesser.getAddressesByThreadId(threadIdList);
 		List<String> numberList = new ArrayList<String>();
-		for (String number : addresses.values()) {
-			numberList.add(number);
+		for (CloudSmsThread thread : threads.values()) {
+			for (String number : thread.getNumberList()) {
+				numberList.add(number);
+			}
 		}
 		
-		return contactsProcesser.getContactsByNumber(numberList);
+		// 返回值
+		LinkedHashMap<String, CloudContactSmsThread> contactThreads = new LinkedHashMap<String, CloudContactSmsThread>();
+		
+		// 获取所有号码相关的联系人信息
+		HashMap<String, CloudContact> numberContact = contactsProcesser.getContactsByNumber(numberList);
+		for (CloudSmsThread thread : threads.values()) {
+			CloudContactSmsThread contactThread = new CloudContactSmsThread();
+			contactThread.setSmsThread(thread);
+			if (!thread.getNumberList().isEmpty()) {
+				// 暂时不考虑一条对话对应多个联系人的情况
+				contactThread.setContact(numberContact.get(thread.getNumberList().get(0)));
+			}
+			contactThreads.put(thread.getId(), contactThread);
+		}
+		
+		return contactThreads;
 	}
 	
 	public void call(String number) {
