@@ -1,5 +1,8 @@
 package com.example.contactstest.data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.text.TextUtils;
 
 public class CloudSmsThread {
@@ -7,6 +10,7 @@ public class CloudSmsThread {
 	private String mDate	= "";
 	private String mMessageCount = "";
 	private String[] mRecipientIds;
+	private List<String> mNumberList = new ArrayList<String>();
 	private String mSnippet	= "";
 	private String mRead	= "";
 	
@@ -40,6 +44,33 @@ public class CloudSmsThread {
 	
 	public String[] getRecipientIds() {
 		return mRecipientIds;
+	}
+	
+	public boolean hasRecipientId(String recipientid) {
+		if (mRecipientIds == null)
+			return false;
+		
+		for (String id : mRecipientIds) {
+			if (TextUtils.equals(id, recipientid)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void setNumberList(List<String> numberList) {
+		if (numberList == null)
+			return;
+		mNumberList.clear();
+		mNumberList.addAll(numberList);
+	}
+	
+	public void addNumber(String list) {
+		mNumberList.add(list);
+	}
+	
+	public List<String> getNumberList() {
+		return mNumberList;
 	}
 	
 	public void setSnippet(String snippet) {

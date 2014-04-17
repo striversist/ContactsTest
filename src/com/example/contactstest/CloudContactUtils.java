@@ -5,6 +5,10 @@ import java.util.List;
 public class CloudContactUtils {
 
 	public static String joinWhere(String field, List<?> valueList) {
+		return joinWhere(field, valueList, true);
+	}
+	
+	public static String joinWhere(String field, List<?> valueList, boolean asString) {
 		if (field == null || valueList == null)
 			return null;
 		
@@ -13,14 +17,14 @@ public class CloudContactUtils {
 		
 		String where = "";
 		if (valueList.size() == 1) {
-			if (valueList.get(0) instanceof String) {
+			if (asString && valueList.get(0) instanceof String) {
 				where = field + "=" + "'" + valueList.get(0) + "'";
 			} else {
 				where = field + "=" + valueList.get(0);
 			}
 		} else {
 			for (int i=0; i<valueList.size(); ++i) {
-				if (valueList.get(i) instanceof String) {
+				if (asString && valueList.get(i) instanceof String) {
 					where += field + "=" + "'" + String.valueOf(valueList.get(i)) + "'";
 				} else {
 					where += field + "=" + String.valueOf(valueList.get(i));

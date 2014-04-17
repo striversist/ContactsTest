@@ -64,6 +64,10 @@ public class CloudSmsProcesser {
 			}
 		}
 		
+		List<String> threadIdList = new ArrayList<String>();
+		threadIdList.add("94");
+		threads = getSmsThreads(threadIdList);
+		
 		HashMap<String, String> addresses = getAddressesByRecipientId(recipientIdList);
 		List<String> numberList = new ArrayList<String>();
 		for (String number : addresses.values()) {
@@ -111,6 +115,7 @@ public class CloudSmsProcesser {
 			
 			// Note: 由于orderBy无效，这里重新按date排序
 			List<CloudSmsThread> threadList = new ArrayList<CloudSmsThread>();
+			List<String> threadIdList = new ArrayList<String>();
 			do {
 				CloudSmsThread thread = new CloudSmsThread();
 				thread.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
@@ -121,7 +126,18 @@ public class CloudSmsProcesser {
 				String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
 				thread.setRecipientIds(recipientIds.split(" "));
 				threadList.add(thread);
+				threadIdList.add(thread.getId());
 			} while (cursor.moveToNext() && (threads.size() < num || num == 0));
+			
+			// 获取对应的电话号码
+			HashMap<String, List<String>> addresses = getAddressesByThread(threadList);
+			if (addresses != null) {
+				for (CloudSmsThread thread : threadList) {
+					if (addresses.containsKey(thread.getId())) {
+						thread.setNumberList(addresses.get(thread.getId()));
+					}
+				}
+			}
 			
 			Collections.sort(threadList, new Comparator<CloudSmsThread>() {
 				@Override
@@ -158,6 +174,7 @@ public class CloudSmsProcesser {
 			return null;
 		}
 		
+		List<CloudSmsThread> threadList = new ArrayList<CloudSmsThread>();
 		while (cursor.moveToNext()) {
 			CloudSmsThread thread = new CloudSmsThread();
 			thread.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
@@ -168,6 +185,17 @@ public class CloudSmsProcesser {
 			String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
 			thread.setRecipientIds(recipientIds.split(" "));
 			threads.put(thread.getId(), thread);
+			threadList.add(thread);
+		}
+		
+		// 获取对应的电话号码
+		HashMap<String, List<String>> addresses = getAddressesByThread(threadList);
+		if (addresses != null) {
+			for (CloudSmsThread thread : threadList) {
+				if (addresses.containsKey(thread.getId())) {
+					thread.setNumberList(addresses.get(thread.getId()));
+				}
+			}
 		}
 		
 		return threads;
@@ -175,19 +203,16 @@ public class CloudSmsProcesser {
 	
 	/**
 	 * 根据threadId获取对应的电话号码
-	 * @param threadIdList
-	 * @return key-threadId, or null
+	 * @param threadList
+	 * @return key-threadId, value-numberList or null
 	 */
-	public HashMap<String, String> getAddressesByThreadId(List<String> threadIdList) {
-		if (threadIdList == null)
+	private HashMap<String, List<String>> getAddressesByThread(List<CloudSmsThread> threadList) {
+		if (threadList == null)
 			return null;
 		
-		HashMap<String, CloudSmsThread> threads = getSmsThreads(threadIdList);
-		if (threads == null)
-			return null;
-		
+		// 获取所有的接收者id
 		List<String> recipientIdList = new ArrayList<String>();
-		for (CloudSmsThread thread : threads.values()) {
+		for (CloudSmsThread thread : threadList) {
 			if (thread.getRecipientIds() != null) {
 				for (String recipientId : thread.getRecipientIds()) {
 					recipientIdList.add(recipientId);
@@ -195,13 +220,30 @@ public class CloudSmsProcesser {
 			}
 		}
 		
-		return getAddressesByRecipientId(recipientIdList);
+		// 获取接收者对应的电话号码
+		HashMap<String, String> recipiendtAddress = getAddressesByRecipientId(recipientIdList);
+		
+		// 生成结果：thread对应的电话号码列表
+		LinkedHashMap<String, List<String>> threadAddresses = new LinkedHashMap<String, List<String>>();
+		for (CloudSmsThread thread : threadList) {
+			if (thread.getRecipientIds() != null) {
+				List<String> numberList = new ArrayList<String>();
+				for (String recipientId : thread.getRecipientIds()) {
+					if (recipiendtAddress.containsKey(recipientId)) {
+						numberList.add(recipiendtAddress.get(recipientId));
+					}
+				}
+				threadAddresses.put(thread.getId(), numberList);
+			}
+		}
+		
+		return threadAddresses;
 	}
 	
 	/**
-	 * 获取thread id对应的规范化的电话号码
+	 * 获取recipientId对应的规范化的电话号码
 	 * @param recipientIdList
-	 * @return key-threadId
+	 * @return key-recipientId, value-电话号码
 	 */
 	private HashMap<String, String> getAddressesByRecipientId(List<String> recipientIdList) {
 		checkInitialized();
