@@ -1,4 +1,4 @@
-package com.example.contactstest;
+package com.example.contactstest.data;
 
 public class CloudCall {
 	private long 	mId;

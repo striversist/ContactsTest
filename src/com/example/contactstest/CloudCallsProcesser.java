@@ -7,6 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
+import com.example.contactstest.data.CloudCall;
+import com.example.contactstest.data.CloudCallGroup;
+
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;

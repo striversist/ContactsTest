@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.example.contactstest.data.CloudContact;
+import com.example.contactstest.data.CloudSmsThread;
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;

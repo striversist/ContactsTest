@@ -8,7 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.example.contactstest.CloudContact.PhoneNumber;
+import com.example.contactstest.data.CloudContact;
+import com.example.contactstest.data.CloudContact.PhoneNumber;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;

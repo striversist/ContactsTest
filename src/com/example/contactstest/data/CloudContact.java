@@ -1,4 +1,4 @@
-package com.example.contactstest;
+package com.example.contactstest.data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +14,9 @@ public class CloudContact {
 	private List<PhoneNumber> mPhoneNumberList = new ArrayList<CloudContact.PhoneNumber>();
 	
 	public static class PhoneNumber {
-		String number;
-		int	   type;
-		String label;
+		public String number;
+		public int	   type;
+		public String label;
 	}
 	
 	public void setId(long id) {

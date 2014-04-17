@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import com.example.contactstest.data.CloudSms;
+import com.example.contactstest.data.CloudSmsThread;
+
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
