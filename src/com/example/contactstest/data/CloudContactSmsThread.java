@@ -1,9 +1,10 @@
 package com.example.contactstest.data;
 
+import java.util.LinkedHashMap;
+
 public class CloudContactSmsThread {
-	// FIXME: 这里暂时不考虑对话中包含多个联系人的情况
 	CloudSmsThread 	mSmsThread;
-	CloudContact	mContact;
+	LinkedHashMap<String, CloudContact> mContacts = new LinkedHashMap<String, CloudContact>();
 	
 	public void setSmsThread(CloudSmsThread thread) {
 		mSmsThread = thread;
@@ -13,15 +14,22 @@ public class CloudContactSmsThread {
 		return mSmsThread;
 	}
 	
-	public void setContact(CloudContact contact) {
-		mContact = contact;
+	public void addContact(String number, CloudContact contact) {
+		if (number == null || contact == null)
+			return;
+		
+		mContacts.put(number, contact);
 	}
 	
 	public boolean hasContact() {
-		return mContact != null;
+		return !mContacts.isEmpty();
 	}
 	
-	public CloudContact getContact() {
-		return mContact;
+	public boolean hasContact(String number) {
+		return mContacts.containsKey(number);
+	}
+	
+	public CloudContact getContact(String number) {
+		return mContacts.get(number);
 	}
 }

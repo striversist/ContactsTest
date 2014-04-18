@@ -1,9 +1,12 @@
 package com.example.contactstest;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 
 import com.example.contactstest.data.CloudContact;
 import com.example.contactstest.data.CloudContactSmsThread;
@@ -33,10 +36,16 @@ public class CloudMixProcesser {
 		
 		HashMap<String, CloudContactSmsThread> contactThreads = getContactThreads(0, 0);
 		for (CloudContactSmsThread contactThread : contactThreads.values()) {
-			if (contactThread.hasContact()) {
-				Log.d(TAG, "conatact name: " + contactThread.getContact().getName());
+			CloudSmsThread thread = contactThread.getSmsThread();
+			for (String number : thread.getNumberList()) {
+				Log.d(TAG, "number: " + number);
+				if (contactThread.hasContact(number)) {
+					Log.d(TAG, "conatact name: " + contactThread.getContact(number).getName());
+				}
 			}
-			Log.d(TAG, "number: " + contactThread.getSmsThread().getNumberList().get(0));
+			String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
+							.format(new Date(Long.valueOf(thread.getDate())));
+			Log.d(TAG, "date: " + date);
 			Log.d(TAG, "snippet: " + contactThread.getSmsThread().getSnippet());
 			Log.d(TAG, "--------------------------------------");
 		}
@@ -73,9 +82,8 @@ public class CloudMixProcesser {
 		for (CloudSmsThread thread : threads.values()) {
 			CloudContactSmsThread contactThread = new CloudContactSmsThread();
 			contactThread.setSmsThread(thread);
-			if (!thread.getNumberList().isEmpty()) {
-				// 暂时不考虑一条对话对应多个联系人的情况
-				contactThread.setContact(numberContact.get(thread.getNumberList().get(0)));
+			for (String number : thread.getNumberList()) {
+				contactThread.addContact(number, numberContact.get(number));
 			}
 			contactThreads.put(thread.getId(), contactThread);
 		}
