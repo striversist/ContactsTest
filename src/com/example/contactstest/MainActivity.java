@@ -45,8 +45,11 @@ public class MainActivity extends Activity {
 //		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
 //		processer.runTest();
 		
-		CloudMixProcesser processer = new CloudMixProcesser(getApplicationContext());
-		processer.runTest();
+//		CloudMixProcesser processer = new CloudMixProcesser(getApplicationContext());
+//		processer.runTest();
+		
+		CloudSmsManager smsManager = new CloudSmsManager(getApplicationContext());
+		smsManager.runTest();
 	}
 
 	private void getContacts() {
