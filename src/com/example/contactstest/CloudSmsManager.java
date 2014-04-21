@@ -5,12 +5,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+import com.example.contactstest.data.CloudSms;
+import com.example.contactstest.data.CloudSmsThread;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -23,12 +30,20 @@ public class CloudSmsManager {
 	private static final String INTENT_USER_CODE = "user_code";
 	
 	private Context mContext;
+	private Handler mHandler;
+	private int mSentSmsCount;
+	private int mInboxSmsCount;
+	private int mSmsThreadsCount;
+	private CloudSmsProcesser mProcesser;
 	private SparseArray<SendSmsCallback> mSendCallbacks = new SparseArray<CloudSmsManager.SendSmsCallback>();
 	private SparseArray<DeliverSmsCallback> mDeliverCallbacks = new SparseArray<CloudSmsManager.DeliverSmsCallback>();
+	private SparseArray<SmsObserver> mObservers = new SparseArray<CloudSmsManager.SmsObserver>();
 	
 	public CloudSmsManager(Context context) {
 		assert (context != null);
 		mContext = context;
+		mHandler = new Handler();
+		mProcesser = new CloudSmsProcesser(mContext);
 		
 		mContext.registerReceiver(new BroadcastReceiver() {
 			@Override
@@ -55,9 +70,26 @@ public class CloudSmsManager {
 				}
 			}
 		}, new IntentFilter(DELIVERED_SMS_ACTION));
+		
+		startObserver();
 	}
 	
 	public void runTest() {
+		addSmsObserver(111, new SmsObserver() {
+			@Override
+			public void onNewThread(int userCode, CloudSmsThread thread) {
+				Log.d(TAG, "onNewThread userCode=" + userCode);
+				Log.d(TAG, "thread: date= " + thread.getDate() + ", address=" 
+						+ thread.getNumberList() + ", snippet=" + thread.getSnippet());
+			}
+
+			@Override
+			public void onNewSms(int userCode, CloudSms sms) {
+				Log.d(TAG, "onNewSms userCode=" + userCode);
+				Log.d(TAG, "onNewSms: date=" + sms.getDate() + ", address=" + sms.getAddress() + ", body=" + sms.getBody());
+			} 
+		});
+		
 		String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
 				.format(new Date());
 		sendTextMessage("18602769673", date + ": 测试", 123, new SendSmsCallback() {
@@ -71,6 +103,11 @@ public class CloudSmsManager {
 				Log.d(TAG, "runTest DeliverSmsCallback:" + " userCode=" + userCode + " resultCode=" + resultCode);
 			}
 		});
+	}
+	
+	public interface SmsObserver {
+		public void onNewThread(int userCode, CloudSmsThread thread);
+		public void onNewSms(int userCode, CloudSms sms);
 	}
 	
 	public interface SendSmsCallback {
@@ -135,5 +172,67 @@ public class CloudSmsManager {
         	mDeliverCallbacks.put(userCode, deliverCallback);
         }
         return true; 
+	}
+	
+	public void addSmsObserver(int userCode, SmsObserver observer) {
+		if (observer == null)
+			return;
+		
+		mObservers.put(userCode, observer);
+	}
+	
+	public void removeSmsObserver(int userCode) {
+		mObservers.remove(userCode);
+	}
+	
+	private void startObserver() {
+		ContentResolver resolver = mContext.getContentResolver();
+		mSentSmsCount = mProcesser.getSentSmsCount();
+		mInboxSmsCount = mProcesser.getInboxSmsCount();
+		mSmsThreadsCount = mProcesser.getThreadsCount();
+		Log.d(TAG, "startObserver: sent=" + mSentSmsCount + ", inbox=" + mInboxSmsCount + ", threads=" + mSmsThreadsCount);
+		
+		// 对话流监听
+		resolver.registerContentObserver(Uri.parse(CloudSmsProcesser.SMS_URI_THREADS), true, new ContentObserver(mHandler){
+			@Override
+			public void onChange(boolean selfChange) {
+				super.onChange(selfChange);
+				Log.d(TAG, "threads change");
+				int sentSmsCount = mProcesser.getSentSmsCount();
+				int inboxSmsCount = mProcesser.getInboxSmsCount();
+				int threadsCount = mProcesser.getThreadsCount();
+				Log.d(TAG, "onChange: sent=" + sentSmsCount + ", inbox=" + inboxSmsCount + ", threads=" + threadsCount);
+				
+				if (threadsCount > mSmsThreadsCount) {		// 收到新对话
+					CloudSmsThread thread = mProcesser.getLatestSmsThread();
+					if (thread != null) {
+						for (int i=0; i<mObservers.size(); ++i) {
+							int userCode = mObservers.keyAt(i);
+							SmsObserver observer = mObservers.valueAt(i);
+							observer.onNewThread(userCode, thread);
+						}
+					}
+				} else if (threadsCount == mSmsThreadsCount) {
+					CloudSms latestSms = null;
+					if (sentSmsCount > mSentSmsCount) {		// 发送新短信
+						latestSms = mProcesser.getLatestSms(CloudSmsProcesser.SMS_URI_SENT);
+					}
+					if (inboxSmsCount > mInboxSmsCount) {	// 接收新短信
+						latestSms = mProcesser.getLatestSms(CloudSmsProcesser.SMS_URI_INBOX);
+					}
+					if (latestSms != null) {
+						for (int i=0; i<mObservers.size(); ++i) {
+							int userCode = mObservers.keyAt(i);
+							SmsObserver observer = mObservers.valueAt(i);
+							observer.onNewSms(userCode, latestSms);
+						}
+					}
+				}
+				
+				mSentSmsCount = sentSmsCount;
+				mInboxSmsCount = inboxSmsCount;
+				mSmsThreadsCount = threadsCount;
+			}
+		});
 	}
 }

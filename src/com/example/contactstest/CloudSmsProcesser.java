@@ -17,7 +17,7 @@ import android.util.Log;
 public class CloudSmsProcesser {
 	public static final String SMS_URI_ALL 		= "content://sms/";
 	public static final String SMS_URI_INBOX 	= "content://sms/inbox";
-	public static final String SMS_URI_SEND 	= "content://sms/sent";
+	public static final String SMS_URI_SENT 	= "content://sms/sent";
 	public static final String SMS_URI_DRAFT 	= "content://sms/draft";
 	public static final String SMS_URI_OUTBOX 	= "content://sms/outbox";
 	public static final String SMS_URI_FAILED 	= "content://sms/failed";
@@ -80,6 +80,75 @@ public class CloudSmsProcesser {
 		for (CloudSms sms : smss.values()) {
 			Log.d("", sms.toString());
 		}
+	}
+	
+	public int getSentSmsCount() {
+		return getSmsCount(SMS_URI_SENT);
+	}
+	
+	public int getInboxSmsCount() {
+		return getSmsCount(SMS_URI_INBOX);
+	}
+	
+	public int getThreadsCount() {
+		return getSmsCount(SMS_URI_THREADS);
+	}
+	
+	private int getSmsCount(String uri) {
+		checkInitialized();
+		if (uri == null)
+			return 0;
+		
+		ContentResolver resolver = mContext.getContentResolver();
+		Cursor cursor = resolver.query(Uri.parse(uri), new String[]{COL_ID}, 
+				null, null, null);
+		if (cursor == null)
+			return 0;
+		
+		int count = cursor.getCount();
+		cursor.close();
+		return count;
+	}
+	
+	/**
+	 * 根据Uri返回最新的短信
+	 * @return
+	 */
+	public CloudSms getLatestSms(String uri) {
+		if (uri == null)
+			return null;
+		
+		HashMap<String, CloudSms> smss = getSms(uri, 0, 1, null, null);
+		if (smss == null || smss.isEmpty())
+			return null;
+		
+		CloudSms latestSms = null;
+		for (CloudSms sms : smss.values()) {
+			latestSms = sms;
+			if (latestSms != null)
+				break;
+		}
+		
+		return latestSms;
+	}
+	
+	/**
+	 * 获取最新的一条对话记录
+	 * @return 最新的对话记录; or null
+	 */
+	public CloudSmsThread getLatestSmsThread() {
+		HashMap<String, CloudSmsThread> threads = getSmsThreads(0, 1, null);
+		if (threads == null || threads.isEmpty())
+			return null;
+		
+		CloudSmsThread latestThread = null;
+		for (CloudSmsThread thread : threads.values()) {
+			latestThread = thread;
+			if (latestThread != null)
+				break;
+		}
+		
+		return latestThread;
 	}
 	
 	/**
