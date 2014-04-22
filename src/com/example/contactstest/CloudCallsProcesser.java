@@ -88,7 +88,7 @@ public class CloudCallsProcesser {
 	 * @param orderBy
 	 * @return CloudCall map, or null
 	 */
-	private HashMap<Long, CloudCall> getCalls(int type, int startPos, int num, String where, String orderBy) {
+	public HashMap<Long, CloudCall> getCalls(int type, int startPos, int num, String where, String orderBy) {
 		checkInitialized();
 		if (type < 0 || type > 3 || startPos < 0 || num < 0)
 			return null;
