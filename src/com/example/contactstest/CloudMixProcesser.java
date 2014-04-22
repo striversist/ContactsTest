@@ -82,8 +82,10 @@ public class CloudMixProcesser {
 		for (CloudSmsThread thread : threads.values()) {
 			CloudContactSmsThread contactThread = new CloudContactSmsThread();
 			contactThread.setSmsThread(thread);
-			for (String number : thread.getNumberList()) {
-				contactThread.addContact(number, numberContact.get(number));
+			if (numberContact != null) {
+				for (String number : thread.getNumberList()) {
+					contactThread.addContact(number, numberContact.get(number));
+				}
 			}
 			contactThreads.put(thread.getId(), contactThread);
 		}
