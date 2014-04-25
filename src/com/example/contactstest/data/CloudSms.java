@@ -49,6 +49,10 @@ public class CloudSms {
 		mRead = read;
 	}
 	
+	public String getRead() {
+	    return mRead;
+	}
+	
 	public boolean isRead() {
 		return TextUtils.equals(mRead, "1");
 	}

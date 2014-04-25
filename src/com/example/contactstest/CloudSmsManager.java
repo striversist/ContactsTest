@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
@@ -53,7 +54,7 @@ public class CloudSmsManager {
 				SendSmsCallback callback = mSendCallbacks.get(userCode);
 				if (callback != null) {
 					mSendCallbacks.remove(userCode);
-					callback.onResult(userCode, getResultCode());
+					callback.onResult(userCode, intent.getExtras(), getResultCode());
 				}
 			}
 		}, new IntentFilter(SENT_SMS_ACTION));
@@ -66,7 +67,7 @@ public class CloudSmsManager {
 				DeliverSmsCallback callback = mDeliverCallbacks.get(userCode);
 				if (callback != null) {
 					mDeliverCallbacks.remove(userCode);
-					callback.onResult(userCode, getResultCode());
+					callback.onResult(userCode, intent.getExtras(), getResultCode());
 				}
 			}
 		}, new IntentFilter(DELIVERED_SMS_ACTION));
@@ -92,14 +93,14 @@ public class CloudSmsManager {
 		
 		String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
 				.format(new Date());
-		sendTextMessage("18602769673", date + ": 测试", 123, new SendSmsCallback() {
+		sendTextMessage("18602769673", date + ": 测试", 123, null, new SendSmsCallback() {
 			@Override
-			public void onResult(int userCode, int resultCode) {
+			public void onResult(int userCode, Bundle data, int resultCode) {
 				Log.d(TAG, "runTest SendSmsCallback:" + " userCode=" + userCode + " resultCode=" + resultCode);
 			}
 		}, new DeliverSmsCallback() {
 			@Override
-			public void onResult(int userCode, int resultCode) {
+			public void onResult(int userCode, Bundle data, int resultCode) {
 				Log.d(TAG, "runTest DeliverSmsCallback:" + " userCode=" + userCode + " resultCode=" + resultCode);
 			}
 		});
@@ -111,7 +112,7 @@ public class CloudSmsManager {
 	}
 	
 	public interface SendSmsCallback {
-		public void onResult(int userCode, int resultCode);
+		public void onResult(int userCode, Bundle userData, int resultCode);
 		public static final int RESULT_OK = Activity.RESULT_OK;
 		public static final int RESULT_ERROR_GENERIC_FAILURE = SmsManager.RESULT_ERROR_GENERIC_FAILURE;
 		public static final int RESULT_ERROR_RADIO_OFF = SmsManager.RESULT_ERROR_RADIO_OFF;
@@ -120,18 +121,18 @@ public class CloudSmsManager {
 	}
 	
 	public interface DeliverSmsCallback {
-		public void onResult(int userCode, int resultCode);
+		public void onResult(int userCode, Bundle userData, int resultCode);
 		public static final int RESULT_OK = Activity.RESULT_OK;
 		public static final int RESULT_FAILED = Activity.RESULT_OK + 1;
 	}
 	
 	public boolean sendTextMessage(String number, String content, int userCode,
-			SendSmsCallback sendCallback, DeliverSmsCallback deliverCallback) {
-		return sendTextMessage(number, null, content, userCode, sendCallback, deliverCallback);
+			Bundle userData, SendSmsCallback sendCallback, DeliverSmsCallback deliverCallback) {
+		return sendTextMessage(number, null, content, userCode, userData, sendCallback, deliverCallback);
 	}
 	
 	public boolean sendTextMessage(String number, String scAddress, String content, int userCode, 
-			SendSmsCallback sendCallback, DeliverSmsCallback deliverCallback) {
+			Bundle userData, SendSmsCallback sendCallback, DeliverSmsCallback deliverCallback) {
 		if (number == null || TextUtils.isEmpty(number.trim()) || content == null)
 			return false;
 		
@@ -142,10 +143,16 @@ public class CloudSmsManager {
 
 		Intent sentIntent = new Intent(SENT_SMS_ACTION);
 		sentIntent.putExtra(INTENT_USER_CODE, userCode);
+		if (userData != null) {
+		    sentIntent.putExtras(userData);
+		}
 		PendingIntent sentPIntent = PendingIntent.getBroadcast(mContext, userCode, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 		
 		Intent deliveredIntent = new Intent(DELIVERED_SMS_ACTION);
 		deliveredIntent.putExtra(INTENT_USER_CODE, userCode);
+		if (userData != null) {
+		    deliveredIntent.putExtras(userData);
+		}
 		PendingIntent deliveryPIntent = PendingIntent.getBroadcast(mContext, userCode, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 		
         if (content.length() > 70) {

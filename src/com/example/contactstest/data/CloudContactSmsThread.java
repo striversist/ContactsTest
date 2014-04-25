@@ -1,9 +1,11 @@
 package com.example.contactstest.data;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class CloudContactSmsThread {
 	CloudSmsThread 	mSmsThread;
+	// SmsThread中的number可能对应的联系人列表
 	LinkedHashMap<String, CloudContact> mContacts = new LinkedHashMap<String, CloudContact>();
 	
 	public void setSmsThread(CloudSmsThread thread) {
@@ -31,5 +33,9 @@ public class CloudContactSmsThread {
 	
 	public CloudContact getContact(String number) {
 		return mContacts.get(number);
+	}
+	
+	public HashMap<String, CloudContact> getContacts() {
+	    return mContacts;
 	}
 }

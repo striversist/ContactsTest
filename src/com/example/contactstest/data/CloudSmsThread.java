@@ -10,7 +10,7 @@ public class CloudSmsThread {
 	private String mDate	= "";
 	private String mMessageCount = "";
 	private String[] mRecipientIds;
-	private List<String> mNumberList = new ArrayList<String>();
+	private ArrayList<String> mNumberList = new ArrayList<String>();
 	private String mSnippet	= "";
 	private String mRead	= "";
 	
@@ -69,7 +69,7 @@ public class CloudSmsThread {
 		mNumberList.add(list);
 	}
 	
-	public List<String> getNumberList() {
+	public ArrayList<String> getNumberList() {
 		return mNumberList;
 	}
 	
@@ -83,6 +83,10 @@ public class CloudSmsThread {
 	
 	public void setRead(String read) {
 		mRead = read;
+	}
+	
+	public String getRead() {
+	    return mRead;
 	}
 	
 	public boolean isRead() {

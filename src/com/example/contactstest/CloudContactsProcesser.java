@@ -22,6 +22,8 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.PhoneLookup;
+import android.util.Pair;
 
 public class CloudContactsProcesser {
 
@@ -121,15 +123,18 @@ public class CloudContactsProcesser {
 			// TODO: 这里可以加where做优化
 			Cursor phoneCursor = resolver.query(CommonDataKinds.Phone.CONTENT_URI,
 					new String[]{Phone.CONTACT_ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL}, null, null, null);
-			while (phoneCursor.moveToNext()) {
-				long id = phoneCursor.getLong(phoneCursor.getColumnIndex(Phone.CONTACT_ID));
-				if (contacts.containsKey(id)) {
-					PhoneNumber phoneNumber = new PhoneNumber();
-					phoneNumber.number = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.NUMBER));
-					phoneNumber.type = phoneCursor.getInt(phoneCursor.getColumnIndex(Phone.TYPE));
-					phoneNumber.label = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.LABEL));
-					contacts.get(id).addPhoneNumber(phoneNumber);
-				}
+			if (phoneCursor != null) {
+    			while (phoneCursor.moveToNext()) {
+    				long id = phoneCursor.getLong(phoneCursor.getColumnIndex(Phone.CONTACT_ID));
+    				if (contacts.containsKey(id)) {
+    					PhoneNumber phoneNumber = new PhoneNumber();
+    					phoneNumber.number = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.NUMBER));
+    					phoneNumber.type = phoneCursor.getInt(phoneCursor.getColumnIndex(Phone.TYPE));
+    					phoneNumber.label = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.LABEL));
+    					contacts.get(id).addPhoneNumber(phoneNumber);
+    				}
+    			}
+    			phoneCursor.close();
 			}
 		} finally {
 			cursor.close();
@@ -177,10 +182,14 @@ public class CloudContactsProcesser {
 			return null;
 		}
 		
-		while (cursor.moveToNext()) {
-			long id = cursor.getLong(cursor.getColumnIndex(Contacts._ID));
-			long photoId = cursor.getLong(cursor.getColumnIndex(Contacts.PHOTO_ID));
-			photoIdMap.put(id, photoId);
+		try {
+    		while (cursor.moveToNext()) {
+    			long id = cursor.getLong(cursor.getColumnIndex(Contacts._ID));
+    			long photoId = cursor.getLong(cursor.getColumnIndex(Contacts.PHOTO_ID));
+    			photoIdMap.put(id, photoId);
+    		}
+		} finally {
+		    cursor.close();
 		}
 		
 		return photoIdMap;
@@ -199,12 +208,26 @@ public class CloudContactsProcesser {
 		return contactPhoto;
 	}
 	
+	@SuppressWarnings("unused")
+    private CloudContact getContactById(Long contactId) {
+	    if (contactId == null)
+	        return null;
+	    
+	    List<Long> contactIdList = new ArrayList<Long>(1);
+	    contactIdList.add(contactId);
+	    HashMap<Long, CloudContact> contacts = getContactsById(contactIdList);
+	    if (contacts == null)
+	        return null;
+	    
+	    return contacts.get(contactId);
+	}
+	
 	/**
 	 * 根据联系人id获取联系人信息
 	 * @param idList
 	 * @return
 	 */
-	private HashMap<Long, CloudContact> getContactsById(List<Long> contactIdList) {
+	public HashMap<Long, CloudContact> getContactsById(List<Long> contactIdList) {
 		if (contactIdList == null)
 			return null;
 		
@@ -236,15 +259,18 @@ public class CloudContactsProcesser {
 			String phoneWhere = CloudContactUtils.joinWhere(Phone.CONTACT_ID, contactIdList);
 			Cursor phoneCursor = resolver.query(CommonDataKinds.Phone.CONTENT_URI,
 					new String[]{Phone.CONTACT_ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL}, phoneWhere, null, null);
-			while (phoneCursor.moveToNext()) {
-				long id = phoneCursor.getLong(phoneCursor.getColumnIndex(Phone.CONTACT_ID));
-				if (contacts.containsKey(id)) {
-					PhoneNumber phoneNumber = new PhoneNumber();
-					phoneNumber.number = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.NUMBER));
-					phoneNumber.type = phoneCursor.getInt(phoneCursor.getColumnIndex(Phone.TYPE));
-					phoneNumber.label = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.LABEL));
-					contacts.get(id).addPhoneNumber(phoneNumber);
-				}
+			if (phoneCursor != null) {
+    			while (phoneCursor.moveToNext()) {
+    				long id = phoneCursor.getLong(phoneCursor.getColumnIndex(Phone.CONTACT_ID));
+    				if (contacts.containsKey(id)) {
+    					PhoneNumber phoneNumber = new PhoneNumber();
+    					phoneNumber.number = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.NUMBER));
+    					phoneNumber.type = phoneCursor.getInt(phoneCursor.getColumnIndex(Phone.TYPE));
+    					phoneNumber.label = phoneCursor.getString(phoneCursor.getColumnIndex(Phone.LABEL));
+    					contacts.get(id).addPhoneNumber(phoneNumber);
+    				}
+    			}
+    			phoneCursor.close();
 			}
 		} finally {
 			cursor.close();
@@ -263,43 +289,44 @@ public class CloudContactsProcesser {
 		if (numberList == null)
 			return null;
 		
-		LinkedHashMap<String, CloudContact> contacts = new LinkedHashMap<String, CloudContact>();
+		LinkedHashMap<String, CloudContact> numberContacts = new LinkedHashMap<String, CloudContact>(); 
 		if (numberList.isEmpty()) {
-			return contacts;
+			return numberContacts;
 		}
 		
 		ContentResolver resolver = mContext.getContentResolver();
-		String where = CloudContactUtils.joinWhere(Phone.NUMBER, numberList);
-		Cursor cursor = resolver.query(Phone.CONTENT_URI, 
-				new String[]{Phone.CONTACT_ID, Phone.NUMBER},
-				where, null, null);
-		if (cursor == null) {
-			return null;
-		}
-		
+		List<Pair<String, Long>> numberIdPairList = new ArrayList<Pair<String,Long>>();
 		List<Long> contactIdList = new ArrayList<Long>();
-		try {
-			while (cursor.moveToNext()) {
-				Long contactId = cursor.getLong(cursor.getColumnIndex(Phone.CONTACT_ID));
-				contactIdList.add(contactId);
-			}
-		} finally {
-			cursor.close();
-		}
-
-		HashMap<Long, CloudContact> detailContacts = getContactsById(contactIdList);
-		if (detailContacts == null) {
-			return contacts;
-		}
-		
-		for (String number : numberList) {
-			for (CloudContact contact : detailContacts.values()) {
-				if (contact.hasNumber(number)) {
-					contacts.put(number, contact);
-				}
-			}
+		for (String number : numberList) {    // 注：这个number可能是normalized number，也可能是普通的number，所以需要通过PhoneLookup查询
+		    Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+		    Cursor cursor = resolver.query(uri, new String[]{PhoneLookup._ID}, null, null, null);
+		    if (cursor == null)
+		        continue;
+		    
+		    while (cursor.moveToNext()) {
+		        Long contactId = cursor.getLong(cursor.getColumnIndex(PhoneLookup._ID));
+		        if (!contactIdList.contains(contactId)) {     // 有可能会查出多个相同的contact id
+    		        contactIdList.add(contactId);
+    		        numberIdPairList.add(new Pair<String, Long>(number, contactId));
+		        }
+		    }
+		    cursor.close();
 		}
 		
-		return contacts;
+		HashMap<Long, CloudContact> contacts = getContactsById(contactIdList);
+		if (contacts == null) {
+		    return numberContacts;
+		}
+		for (int i=0; i<numberIdPairList.size(); ++i) {
+		    String number = numberIdPairList.get(i).first;
+		    Long contactId = numberIdPairList.get(i).second;
+		    if (contacts.containsKey(contactId)) {
+		        if (!numberContacts.containsKey(number)) {    // 不考虑一个号码对应多个联系人的情况，所以只取一个联系人记录
+		            numberContacts.put(number, contacts.get(contactId));
+		        }
+		    }
+		}
+		
+		return numberContacts;
 	}
 }

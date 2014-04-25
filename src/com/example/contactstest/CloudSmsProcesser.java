@@ -193,7 +193,7 @@ public class CloudSmsProcesser {
 				String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
 				thread.setRecipientIds(recipientIds.split(" "));
 				threadList.add(thread);
-			} while (cursor.moveToNext() && (threads.size() < num || num == 0));
+			} while (cursor.moveToNext() && (threadList.size() < num || num == 0));
 			
 			// 获取对应的电话号码
 			HashMap<String, List<String>> addresses = getAddressesByThread(threadList);
@@ -235,17 +235,21 @@ public class CloudSmsProcesser {
 		}
 		
 		List<CloudSmsThread> threadList = new ArrayList<CloudSmsThread>();
-		while (cursor.moveToNext()) {
-			CloudSmsThread thread = new CloudSmsThread();
-			thread.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
-			thread.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
-			thread.setMessageCount(cursor.getString(cursor.getColumnIndex(COL_MSG_COUNT)));
-			thread.setRead(cursor.getString(cursor.getColumnIndex(COL_READ)));
-			thread.setSnippet(cursor.getString(cursor.getColumnIndex(COL_SNIPPET)));
-			String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
-			thread.setRecipientIds(recipientIds.split(" "));
-			threads.put(thread.getId(), thread);
-			threadList.add(thread);
+		try {
+    		while (cursor.moveToNext()) {
+    			CloudSmsThread thread = new CloudSmsThread();
+    			thread.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
+    			thread.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
+    			thread.setMessageCount(cursor.getString(cursor.getColumnIndex(COL_MSG_COUNT)));
+    			thread.setRead(cursor.getString(cursor.getColumnIndex(COL_READ)));
+    			thread.setSnippet(cursor.getString(cursor.getColumnIndex(COL_SNIPPET)));
+    			String recipientIds = cursor.getString(cursor.getColumnIndex(COL_RECIPIENT_IDS));
+    			thread.setRecipientIds(recipientIds.split(" "));
+    			threads.put(thread.getId(), thread);
+    			threadList.add(thread);
+    		}
+		} finally {
+		    cursor.close();
 		}
 		
 		// 获取对应的电话号码
@@ -280,11 +284,13 @@ public class CloudSmsProcesser {
 			}
 		}
 		
-		// 获取接收者对应的电话号码
-		HashMap<String, String> recipiendtAddress = getAddressesByRecipientId(recipientIdList);
-		
 		// 生成结果：thread对应的电话号码列表
 		LinkedHashMap<String, List<String>> threadAddresses = new LinkedHashMap<String, List<String>>();
+		// 获取接收者对应的电话号码
+        HashMap<String, String> recipiendtAddress = getAddressesByRecipientId(recipientIdList);
+        if (recipiendtAddress == null) {
+            return threadAddresses;
+        }
 		for (CloudSmsThread thread : threadList) {
 			if (thread.getRecipientIds() != null) {
 				List<String> numberList = new ArrayList<String>();

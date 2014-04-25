@@ -56,7 +56,7 @@ public class CloudMixProcesser {
 	 * @param threadIdList
 	 * @return key-threadId
 	 */
-	private HashMap<String, CloudContactSmsThread> getContactThreads(int startPos, int num) {
+	public HashMap<String, CloudContactSmsThread> getContactThreads(int startPos, int num) {
 		checkInitialized();
 		if (startPos < 0 || num < 0)
 			return null;
@@ -78,13 +78,13 @@ public class CloudMixProcesser {
 		LinkedHashMap<String, CloudContactSmsThread> contactThreads = new LinkedHashMap<String, CloudContactSmsThread>();
 		
 		// 获取所有号码相关的联系人信息
-		HashMap<String, CloudContact> numberContact = contactsProcesser.getContactsByNumber(numberList);
+		HashMap<String, CloudContact> numberContacts = contactsProcesser.getContactsByNumber(numberList);
 		for (CloudSmsThread thread : threads.values()) {
 			CloudContactSmsThread contactThread = new CloudContactSmsThread();
 			contactThread.setSmsThread(thread);
-			if (numberContact != null) {
+			if (numberContacts != null) {
 				for (String number : thread.getNumberList()) {
-					contactThread.addContact(number, numberContact.get(number));
+					contactThread.addContact(number, numberContacts.get(number));
 				}
 			}
 			contactThreads.put(thread.getId(), contactThread);
