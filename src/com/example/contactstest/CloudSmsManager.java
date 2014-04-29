@@ -29,6 +29,8 @@ public class CloudSmsManager {
 	private static final String SENT_SMS_ACTION = "SENT_SMS_ACTION";
 	private static final String DELIVERED_SMS_ACTION = "DELIVERED_SMS_ACTION";
 	private static final String INTENT_USER_CODE = "user_code";
+	private static final String KEY_ADDRESS = "address";
+	private static final String KEY_BODY = "body";
 	
 	private Context mContext;
 	private Handler mHandler;
@@ -40,39 +42,69 @@ public class CloudSmsManager {
 	private SparseArray<DeliverSmsCallback> mDeliverCallbacks = new SparseArray<CloudSmsManager.DeliverSmsCallback>();
 	private SparseArray<SmsObserver> mObservers = new SparseArray<CloudSmsManager.SmsObserver>();
 	
+	/**
+	 * The caller thread should already Looper.prepare()
+	 * @param context
+	 */
 	public CloudSmsManager(Context context) {
-		assert (context != null);
-		mContext = context;
-		mHandler = new Handler();
-		mProcesser = new CloudSmsProcesser(mContext);
-		
-		mContext.registerReceiver(new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				int userCode = intent.getIntExtra(INTENT_USER_CODE, 0);
-				Log.d(TAG, "message sent, user code=" + userCode);
-				SendSmsCallback callback = mSendCallbacks.get(userCode);
-				if (callback != null) {
-					mSendCallbacks.remove(userCode);
-					callback.onResult(userCode, intent.getExtras(), getResultCode());
-				}
-			}
-		}, new IntentFilter(SENT_SMS_ACTION));
-		
-		mContext.registerReceiver(new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				int userCode = intent.getIntExtra(INTENT_USER_CODE, 0);
-				Log.d(TAG, "message delivered, user code=" + userCode);
-				DeliverSmsCallback callback = mDeliverCallbacks.get(userCode);
-				if (callback != null) {
-					mDeliverCallbacks.remove(userCode);
-					callback.onResult(userCode, intent.getExtras(), getResultCode());
-				}
-			}
-		}, new IntentFilter(DELIVERED_SMS_ACTION));
-		
-		startObserver();
+	    init(context, null);
+	}
+	
+	public CloudSmsManager(Context context, Handler handler) {
+		init(context, handler);
+	}
+	
+	private void init(Context context, Handler handler) {
+	    assert (context != null);
+        mContext = context;
+        if (handler != null) {
+            mHandler = handler;
+        } else {
+            mHandler = new Handler();
+        }
+        mProcesser = new CloudSmsProcesser(mContext);
+        
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int userCode = intent.getIntExtra(INTENT_USER_CODE, 0);
+                Log.d(TAG, "message sent, user code=" + userCode);
+                if (getResultCode() == Activity.RESULT_OK) {    // 发送成功，需要写入数据库
+                    String address = intent.getStringExtra(KEY_ADDRESS);
+                    String body = intent.getStringExtra(KEY_BODY);
+                    if (!TextUtils.isEmpty(address) && !TextUtils.isEmpty(body)) {
+                        CloudSms sms = new CloudSms();
+                        sms.setAddress(address);
+                        sms.setDate(String.valueOf(System.currentTimeMillis()));
+                        sms.setRead("1");
+                        sms.setType("2");
+                        sms.setBody(body);
+                        
+                        new CloudSmsProcesser(mContext).writeSmsToDatabase(CloudSmsProcesser.SMS_URI_SENT, sms);
+                    }
+                }
+                SendSmsCallback callback = mSendCallbacks.get(userCode);
+                if (callback != null) {
+                    mSendCallbacks.remove(userCode);
+                    callback.onResult(userCode, intent.getExtras(), getResultCode());
+                }
+            }
+        }, new IntentFilter(SENT_SMS_ACTION));
+        
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int userCode = intent.getIntExtra(INTENT_USER_CODE, 0);
+                Log.d(TAG, "message delivered, user code=" + userCode);
+                DeliverSmsCallback callback = mDeliverCallbacks.get(userCode);
+                if (callback != null) {
+                    mDeliverCallbacks.remove(userCode);
+                    callback.onResult(userCode, intent.getExtras(), getResultCode());
+                }
+            }
+        }, new IntentFilter(DELIVERED_SMS_ACTION));
+        
+        startObserver();
 	}
 	
 	public void runTest() {
@@ -140,44 +172,44 @@ public class CloudSmsManager {
 		if (smsManager == null)
 			return false;
 		
-
-		Intent sentIntent = new Intent(SENT_SMS_ACTION);
-		sentIntent.putExtra(INTENT_USER_CODE, userCode);
-		if (userData != null) {
-		    sentIntent.putExtras(userData);
-		}
-		PendingIntent sentPIntent = PendingIntent.getBroadcast(mContext, userCode, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		// 需要将callback注册提前，以防broadcast时callback还没来得及注册
+		// FIXME: 目前暂定为若发送多条短信（字数>70），只回一次callback
+		if (sendCallback != null) {
+            mSendCallbacks.put(userCode, sendCallback);
+        }
+        if (deliverCallback != null) {
+            mDeliverCallbacks.put(userCode, deliverCallback);
+        }
 		
-		Intent deliveredIntent = new Intent(DELIVERED_SMS_ACTION);
-		deliveredIntent.putExtra(INTENT_USER_CODE, userCode);
-		if (userData != null) {
-		    deliveredIntent.putExtras(userData);
-		}
-		PendingIntent deliveryPIntent = PendingIntent.getBroadcast(mContext, userCode, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-		
-        if (content.length() > 70) {
-            ArrayList<String> texts = smsManager.divideMessage(content);  //拆分短信
-            for (String text : texts) {
-                try {
-                    smsManager.sendTextMessage(number, scAddress, text, sentPIntent, deliveryPIntent);
-                } catch (Exception ex) {
-                    return false;
-                }
-            }
-        } else {
+        ArrayList<String> texts = smsManager.divideMessage(content);  //拆分短信
+        for (String text : texts) {
             try {
-                smsManager.sendTextMessage(number, scAddress, content, sentPIntent, deliveryPIntent);
+                Intent sentIntent = new Intent(SENT_SMS_ACTION);
+                sentIntent.putExtra(KEY_ADDRESS, number);
+                sentIntent.putExtra(KEY_BODY, text);
+                sentIntent.putExtra(INTENT_USER_CODE, userCode);
+                if (userData != null) {
+                    sentIntent.putExtras(userData);
+                }
+                PendingIntent sentPIntent = PendingIntent.getBroadcast(mContext, userCode, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                
+                Intent deliveredIntent = new Intent(DELIVERED_SMS_ACTION);
+                deliveredIntent.putExtra(KEY_ADDRESS, number);
+                deliveredIntent.putExtra(KEY_BODY, text);
+                deliveredIntent.putExtra(INTENT_USER_CODE, userCode);
+                if (userData != null) {
+                    deliveredIntent.putExtras(userData);
+                }
+                PendingIntent deliveryPIntent = PendingIntent.getBroadcast(mContext, userCode, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                
+                smsManager.sendTextMessage(number, scAddress, text, sentPIntent, deliveryPIntent);
             } catch (Exception ex) {
+                mSendCallbacks.remove(userCode);
+                mDeliverCallbacks.remove(userCode);
                 return false;
             }
         }
         
-        if (sendCallback != null) {
-        	mSendCallbacks.put(userCode, sendCallback);
-        }
-        if (deliverCallback != null) {
-        	mDeliverCallbacks.put(userCode, deliverCallback);
-        }
         return true; 
 	}
 	

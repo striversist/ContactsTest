@@ -8,6 +8,12 @@ public class CloudContactSmsThread {
 	// SmsThread中的number可能对应的联系人列表
 	LinkedHashMap<String, CloudContact> mContacts = new LinkedHashMap<String, CloudContact>();
 	
+	public String getThreadId() {
+	    if (mSmsThread == null)
+	        return null;
+	    return mSmsThread.getId();
+	}
+	
 	public void setSmsThread(CloudSmsThread thread) {
 		mSmsThread = thread;
 	}

@@ -9,6 +9,7 @@ import com.example.contactstest.data.CloudSms;
 import com.example.contactstest.data.CloudSmsThread;
 
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -444,5 +445,25 @@ public class CloudSmsProcesser {
 		}
 		
 		return smsMap;
+	}
+	
+	public boolean writeSmsToDatabase(String uri, CloudSms sms) {
+	    checkInitialized();
+	    if (uri == null || sms == null)
+	        return false;
+	    
+	    ContentValues values = new ContentValues();
+	    values.put("address", sms.getAddress());
+	    values.put("date", sms.getDate());                
+	    values.put("read", sms.getRead());
+	    values.put("type", sms.getType());
+	    values.put("body", sms.getBody());
+	    
+	    Uri result = mContext.getContentResolver().insert(Uri.parse(uri), values);
+	    if (result == null) {
+	        return false;
+	    }
+	    
+	    return true;
 	}
 }
