@@ -1,6 +1,7 @@
 package com.example.contactstest;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -184,20 +185,36 @@ public class CloudCallsProcesser {
 		return groups;
 	}
 	
-	// TODO: 待验证
-	private boolean deleteCalls(List<Long> idList) {
+	/**
+	 * 删除一条通话记录
+	 * @param callId
+	 * @return true(success); false(failed)
+	 */
+	public boolean deleteCall(Long callId) {
+	    if (callId == null)
+	        return false;
+	    
+	    List<Long> callIdList = new ArrayList<Long>(1);
+	    callIdList.add(callId);
+	    return deleteCalls(callIdList) > 0;
+	}
+	
+	/**
+	 * 删除通话记录
+	 * @param idList
+	 * @return 成功删除的条数
+	 */
+	public int deleteCalls(List<Long> idList) {
 		checkInitialized();
 		if (idList == null)
-			return false;
+			return 0;
 		
 		if (idList.isEmpty())
-			return true;
+			return 0;
 		
 		ContentResolver resolver = mContext.getContentResolver();
-		for (Long id : idList) {
-			resolver.delete(CallLog.Calls.CONTENT_URI, Calls._ID + "=" + id, null);
-		}
+		String where = CloudContactUtils.joinWhere(Calls._ID, idList);
 		
-		return true;
+		return resolver.delete(CallLog.Calls.CONTENT_URI, where, null);
 	}
 }

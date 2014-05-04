@@ -42,14 +42,14 @@ public class MainActivity extends Activity {
 //		CloudCallsProcesser processer = new CloudCallsProcesser(getApplicationContext());
 //		processer.runTest();
 //		
-//		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
-//		processer.runTest();
+		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
+		processer.runTest();
 		
 //		CloudMixProcesser processer = new CloudMixProcesser(getApplicationContext());
 //		processer.runTest();
 		
-		CloudSmsManager smsManager = new CloudSmsManager(getApplicationContext());
-		smsManager.runTest();
+//		CloudSmsManager smsManager = new CloudSmsManager(getApplicationContext());
+//		smsManager.runTest();
 	}
 
 	private void getContacts() {

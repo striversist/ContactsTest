@@ -81,6 +81,9 @@ public class CloudSmsProcesser {
 		for (CloudSms sms : smss.values()) {
 			Log.d("", sms.toString());
 		}
+		
+		boolean result = deleteThread("114");
+		Log.d("", "" + result);
 	}
 	
 	public int getSentSmsCount() {
@@ -370,6 +373,30 @@ public class CloudSmsProcesser {
 		return count;
 	}
 	
+	/**
+	 * 获取指定threadId的最新短信
+	 * @param threadId
+	 * @return 最新的sm, or null
+	 */
+	public CloudSms getLatestSmsInThread(String threadId) {
+	    HashMap<String, CloudSms> smsMap = getSmsInThread(threadId, 0, 1);
+	    if (smsMap == null)
+	        return null;
+	    for (CloudSms sms : smsMap.values()) {
+	        if (sms != null) {
+	            return sms;
+	        }
+	    }
+	    return null;
+	}
+	
+	/**
+	 * 获取指定threadId的短信
+	 * @param threadId
+	 * @param startPos
+	 * @param num
+	 * @return key-"sms id"
+	 */
 	public HashMap<String, CloudSms> getSmsInThread(String threadId, int startPos, int num) {
 		return getSmsInThread(SMS_URI_ALL, threadId, startPos, num);
 	}
@@ -465,5 +492,87 @@ public class CloudSmsProcesser {
 	    }
 	    
 	    return true;
+	}
+	
+	/**
+	 * 删除一条对话流
+	 * @param threadId
+	 * @return true(success); false(failed)
+	 */
+	public boolean deleteThread(String threadId) {
+	    if (threadId == null)
+	        return false;
+	    List<String> threadIdList = new ArrayList<String>(1);
+	    threadIdList.add(threadId);
+	    return deleteThreads(threadIdList) > 0;
+	}
+	
+	/**
+	 * 删除会话流
+	 * @param threadIdList
+	 * @return 删除成功的个数
+	 */
+	public int deleteThreads(List<String> threadIdList) {
+	    if (threadIdList == null)
+	        return 0;
+	    
+	    int threadDeleted = 0;
+	    for (String threadId : threadIdList) {
+	        HashMap<String, CloudSms> smsMap = getSmsInThread(threadId, 0, 0);
+	        if (smsMap != null) {
+	            int smsDeleted = 0;
+	            for (CloudSms sms : smsMap.values()) {
+	                if (deleteSms(sms.getId())) {
+	                    smsDeleted++;
+	                }
+	            }
+	            if (smsDeleted == smsMap.size()) {
+	                threadDeleted++;
+	            }
+	        }
+	    }
+	    
+	    return threadDeleted;
+	}
+	
+	/**
+	 * 删除一条短信
+	 * @param smsId
+	 * @return true(success); false(failed)
+	 */
+	public boolean deleteSms(String smsId) {
+	    if (smsId == null)
+	        return false;
+	    List<String> smsIdList = new ArrayList<String>(1);
+	    smsIdList.add(smsId);
+	    return deleteSms(smsIdList) > 0;
+	}
+	
+	/**
+	 * 删除短信
+	 * @param smsIdList
+	 * @return 删除成功的个数
+	 */
+	public int deleteSms(List<String> smsIdList) {
+	    return deleteIdList(SMS_URI_ALL, smsIdList);
+	}
+	
+	/**
+	 * 删除指定uri的记录
+	 * @param idList
+	 * @return
+	 */
+	private int deleteIdList(String uri, List<String> idList) {
+	    checkInitialized();
+	    if (uri == null || idList == null)
+	        return 0;
+	    if (idList.isEmpty())
+	        return 0;
+	    
+	    ContentResolver resolver = mContext.getContentResolver();
+        String where = CloudContactUtils.joinWhere(COL_ID, idList);
+        
+        int rows = resolver.delete(Uri.parse(uri), where, null);
+        return rows;
 	}
 }

@@ -138,6 +138,11 @@ public class CloudSmsManager {
 		});
 	}
 	
+	/**
+	 * 监控新会话、新短信（若新建一条会话，则onNewThread会被调用，而onNewSms不会被调用）
+	 * @author aarontang
+	 *
+	 */
 	public interface SmsObserver {
 		public void onNewThread(int userCode, CloudSmsThread thread);
 		public void onNewSms(int userCode, CloudSms sms);
