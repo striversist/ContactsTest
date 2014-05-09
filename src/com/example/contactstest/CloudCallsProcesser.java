@@ -215,6 +215,7 @@ public class CloudCallsProcesser {
 		ContentResolver resolver = mContext.getContentResolver();
 		String where = CloudContactUtils.joinWhere(Calls._ID, idList);
 		
-		return resolver.delete(CallLog.Calls.CONTENT_URI, where, null);
+		int rows = resolver.delete(CallLog.Calls.CONTENT_URI, where, null);
+		return rows;
 	}
 }

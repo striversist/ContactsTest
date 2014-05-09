@@ -80,7 +80,10 @@ public class CloudSmsManager {
                         sms.setType("2");
                         sms.setBody(body);
                         
-                        new CloudSmsProcesser(mContext).writeSmsToDatabase(CloudSmsProcesser.SMS_URI_SENT, sms);
+                        CloudSmsProcesser processer = new CloudSmsProcesser(mContext);
+                        if (!processer.writeSmsToDatabase(CloudSmsProcesser.SMS_URI_SENT, sms)) {
+                            Log.e(TAG, "writeSmsToDatabase failed");
+                        }
                     }
                 }
                 SendSmsCallback callback = mSendCallbacks.get(userCode);
