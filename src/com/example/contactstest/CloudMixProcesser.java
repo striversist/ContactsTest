@@ -13,8 +13,6 @@ import com.example.contactstest.data.CloudContactSmsThread;
 import com.example.contactstest.data.CloudSmsThread;
 
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.util.Log;
 
 public class CloudMixProcesser {
@@ -108,14 +106,5 @@ public class CloudMixProcesser {
 		}
 		
 		return contactThreads;
-	}
-	
-	public void call(String number) {
-		if (number == null)
-			return;
-		
-		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + number));
-		dialIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		mContext.startActivity(dialIntent);
 	}
 }
