@@ -47,7 +47,7 @@ public class CloudCallManager {
             @Override
             public void run() {
                 boolean success = endCall();
-                Log.d(TAG, "endCall success=" + success);
+                Log.d(TAG, "endCall " + (success ? "success" : "failed"));
             }
         }, 10000);
     }
