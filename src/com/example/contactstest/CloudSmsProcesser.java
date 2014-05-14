@@ -9,6 +9,7 @@ import com.example.contactstest.data.CloudSms;
 import com.example.contactstest.data.CloudSmsThread;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -513,22 +514,17 @@ public class CloudSmsProcesser {
 	 * @return 删除成功的个数
 	 */
 	public int deleteThreads(List<String> threadIdList) {
+	    checkInitialized();
 	    if (threadIdList == null)
 	        return 0;
 	    
+	    ContentResolver resolver = mContext.getContentResolver();
 	    int threadDeleted = 0;
 	    for (String threadId : threadIdList) {
-	        HashMap<String, CloudSms> smsMap = getSmsInThread(threadId, 0, 0);
-	        if (smsMap != null) {
-	            int smsDeleted = 0;
-	            for (CloudSms sms : smsMap.values()) {
-	                if (deleteSms(sms.getId())) {
-	                    smsDeleted++;
-	                }
-	            }
-	            if (smsDeleted == smsMap.size()) {
-	                threadDeleted++;
-	            }
+	        Uri deleteUri = ContentUris.withAppendedId(Uri.parse(SMS_URI_THREADS), Long.valueOf(threadId));
+	        int rows = resolver.delete(deleteUri, null, null);
+	        if (rows > 0) {    // 删除短信条数
+	            threadDeleted++;
 	        }
 	    }
 	    
@@ -570,9 +566,13 @@ public class CloudSmsProcesser {
 	        return 0;
 	    
 	    ContentResolver resolver = mContext.getContentResolver();
-        String where = CloudContactUtils.joinWhere(COL_ID, idList);
+        int rowsDeleted = 0;
+        for (String id : idList) {
+            Uri deleteUri = ContentUris.withAppendedId(Uri.parse(uri), Long.valueOf(id));
+            int rows = resolver.delete(deleteUri, null, null);
+            rowsDeleted += rows;
+        }
         
-        int rows = resolver.delete(Uri.parse(uri), where, null);
-        return rows;
+        return rowsDeleted;
 	}
 }

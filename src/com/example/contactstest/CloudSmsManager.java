@@ -190,6 +190,7 @@ public class CloudSmsManager {
         }
 		
         ArrayList<String> texts = smsManager.divideMessage(content);  //拆分短信
+        int requestCode = 0;
         for (String text : texts) {
             try {
                 Intent sentIntent = new Intent(SENT_SMS_ACTION);
@@ -199,7 +200,7 @@ public class CloudSmsManager {
                 if (userData != null) {
                     sentIntent.putExtras(userData);
                 }
-                PendingIntent sentPIntent = PendingIntent.getBroadcast(mContext, userCode, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent sentPIntent = PendingIntent.getBroadcast(mContext, requestCode++, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
                 
                 Intent deliveredIntent = new Intent(DELIVERED_SMS_ACTION);
                 deliveredIntent.putExtra(KEY_ADDRESS, number);
@@ -208,7 +209,7 @@ public class CloudSmsManager {
                 if (userData != null) {
                     deliveredIntent.putExtras(userData);
                 }
-                PendingIntent deliveryPIntent = PendingIntent.getBroadcast(mContext, userCode, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent deliveryPIntent = PendingIntent.getBroadcast(mContext, requestCode++, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
                 
                 smsManager.sendTextMessage(number, scAddress, text, sentPIntent, deliveryPIntent);
             } catch (Exception ex) {
