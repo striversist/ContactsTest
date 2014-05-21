@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.contactstest.core.CloudCallManager;
+
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;

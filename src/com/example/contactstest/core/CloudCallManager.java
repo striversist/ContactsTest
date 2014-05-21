@@ -1,4 +1,4 @@
-package com.example.contactstest;
+package com.example.contactstest.core;
 
 import java.lang.reflect.Method;
 

@@ -1,4 +1,4 @@
-package com.example.contactstest;
+package com.example.contactstest.core;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

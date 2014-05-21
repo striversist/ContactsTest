@@ -1,4 +1,4 @@
-package com.example.contactstest;
+package com.example.contactstest.core;
 
 import java.io.InputStream;
 import java.util.ArrayList;

@@ -40,7 +40,7 @@
             </intent-filter>
         </activity>
         
-        <receiver android:name=".CloudPhoneReceiver">
+        <receiver android:name="com.example.contactstest.core.CloudPhoneReceiver">
         	<intent-filter>
 			<action android:name="android.intent.action.NEW_OUTGOING_CALL" />
         	</intent-filter>
