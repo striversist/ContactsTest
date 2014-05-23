@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.example.contactstest.data.CloudContact;
+import com.example.contactstest.data.CloudGroup;
 import com.example.contactstest.data.CloudContact.PhoneNumber;
 
 import android.content.ContentResolver;
@@ -20,8 +21,11 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
+import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.PhoneLookup;
 import android.util.Pair;
 
@@ -43,6 +47,9 @@ public class CloudContactsProcesser {
 			contactIdList.add(cloudContact.getId());
 		}
 		getPhotos(contactIdList, false);
+		getGroups();
+		getContactsIdInGroup(4);
+		getContactsIdInGroup(5);
 	}
 	
 	private void checkInitialized() {
@@ -329,5 +336,65 @@ public class CloudContactsProcesser {
 		}
 		
 		return numberContacts;
+	}
+	
+	public HashMap<Long, CloudGroup> getGroups() {
+	    checkInitialized();
+	    LinkedHashMap<Long, CloudGroup> groups = new LinkedHashMap<Long, CloudGroup>();
+	    
+	    ContentResolver resolver = mContext.getContentResolver();
+	    Cursor cursor = resolver.query(ContactsContract.Groups.CONTENT_SUMMARY_URI, 
+                new String[]{Groups._ID, Groups.TITLE, Groups.NOTES,
+	            Groups.SYSTEM_ID, Groups.SUMMARY_COUNT},
+                null, null, null);
+        if (cursor == null) {
+            return null;
+        }
+        
+        try {
+            if (cursor.getCount() == 0) { // 没有联系人信息
+                return groups;
+            }
+            
+            while (cursor.moveToNext()) {
+                CloudGroup group = new CloudGroup();
+                group.setId(cursor.getLong(cursor.getColumnIndex(Groups._ID)));
+                group.setNotes(cursor.getString(cursor.getColumnIndex(Groups.NOTES)));
+                group.setSummaryCount(cursor.getInt(cursor.getColumnIndex(Groups.SUMMARY_COUNT)));
+                group.setSystemId(cursor.getString(cursor.getColumnIndex(Groups.SYSTEM_ID)));
+                group.setTitle(cursor.getString(cursor.getColumnIndex(Groups.TITLE)));
+                groups.put(group.getId(), group);
+            }
+        } finally {
+            cursor.close();
+        }
+	    
+	    return groups;
+	}
+	
+	public ArrayList<Long> getContactsIdInGroup(long groupId) {
+	    checkInitialized();
+	    if (groupId < 0)
+	        return null;
+	    
+	    ArrayList<Long> contactsId = new ArrayList<Long>();
+	    ContentResolver resolver = mContext.getContentResolver();
+	    String where = Data.MIMETYPE + "=" + "'" + GroupMembership.CONTENT_ITEM_TYPE + "'" + 
+	            " AND " + GroupMembership.GROUP_ROW_ID + "=" + String.valueOf(groupId);
+	    Cursor cursor = resolver.query(Data.CONTENT_URI, new String[]{GroupMembership.CONTACT_ID, GroupMembership.GROUP_ROW_ID},
+	            where, null, null);
+	    if (cursor == null)
+	        return contactsId;
+	    
+	    try {
+	        while (cursor.moveToNext()) {
+	            long contactId = cursor.getLong(cursor.getColumnIndex(GroupMembership.CONTACT_ID));
+	            contactsId.add(contactId);
+	        }
+	    } finally {
+	        cursor.close();
+	    }
+	    
+	    return contactsId;
 	}
 }

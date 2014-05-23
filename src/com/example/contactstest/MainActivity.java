@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.contactstest.core.CloudCallManager;
+import com.example.contactstest.core.CloudContactsProcesser;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,8 +39,8 @@ public class MainActivity extends Activity {
 	}
 	
 	private void test() {
-//		CloudContactsProcesser processer = new CloudContactsProcesser(getApplicationContext());
-//		processer.runTest();
+		CloudContactsProcesser processer = new CloudContactsProcesser(getApplicationContext());
+		processer.runTest();
 //		
 //		CloudCallsProcesser processer = new CloudCallsProcesser(getApplicationContext());
 //		processer.runTest();
@@ -53,8 +54,8 @@ public class MainActivity extends Activity {
 //		CloudSmsManager smsManager = new CloudSmsManager(getApplicationContext());
 //		smsManager.runTest();
 	    
-	    CloudCallManager callManager = new CloudCallManager(getApplicationContext());
-	    callManager.runTest();
+//	    CloudCallManager callManager = new CloudCallManager(getApplicationContext());
+//	    callManager.runTest();
 	}
 
 	private void getContacts() {
