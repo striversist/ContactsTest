@@ -67,18 +67,47 @@ public class CloudMixProcesser {
 	}
 	
 	/**
-	 * 获取联系人会话流（注意：对于陌生的短信对话没有相应的联系人）
-	 * @param threadIdList
+	 * 根据threadId获取联系人会话流（注意：对于陌生的短信对话没有相应的联系人）
+	 * @param threadId
+	 * @return
+	 */
+	public CloudContactSmsThread getContactThread(String threadId) {
+	    String where = CloudSmsProcesser.COL_ID + "=" + threadId;
+	    HashMap<String, CloudContactSmsThread> contactThreads = getContactThreads(0, 1, where);
+        if (contactThreads == null)
+            return null;
+        
+        for (CloudContactSmsThread contactThread : contactThreads.values()) {
+            if (contactThread != null) {
+                return contactThread;
+            }
+        }
+        return null;
+	}
+	
+	/**
+	 * 获取联系人会话流
+	 * @param startPos
+	 * @param num
 	 * @return key-threadId
 	 */
 	public HashMap<String, CloudContactSmsThread> getContactThreads(int startPos, int num) {
+	    return getContactThreads(startPos, num, null);
+	}
+	
+	/**
+	 * 获取联系人会话流（注意：对于陌生的短信对话没有相应的联系人）
+	 * @param 
+	 * @return key-threadId
+	 */
+	private HashMap<String, CloudContactSmsThread> getContactThreads(int startPos, int num, String where) {
 		checkInitialized();
 		if (startPos < 0 || num < 0)
 			return null;
 		
 		CloudSmsProcesser smsProcesser = new CloudSmsProcesser(mContext);
 		CloudContactsProcesser contactsProcesser = new CloudContactsProcesser(mContext);
-		HashMap<String, CloudSmsThread> threads = smsProcesser.getSmsThreads(startPos, num, null);
+		HashMap<String, CloudSmsThread> threads = smsProcesser.getSmsThreads(startPos, num, where);
 		if (threads == null)
 			return null;
 		

@@ -9,7 +9,7 @@ public class CloudSms {
 	private String 	mDate		= "";
 	private String 	mRead		= "";
 	private String 	mStatus		= "";
-	private String 	mType		= "";	// 1:接收；2:发送
+	private String 	mType		= "";	// 1:接收；2:发送；3:草稿；4：发件箱；5：失败；6：队列中
 	private String 	mSubject 	= "";
 	private String 	mBody 		= "";
 	

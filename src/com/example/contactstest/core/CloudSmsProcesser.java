@@ -87,6 +87,10 @@ public class CloudSmsProcesser {
 		Log.d("", "" + result);
 	}
 	
+	public int getAllSmsCount() {
+	    return getSmsCount(SMS_URI_ALL);
+	}
+	
 	public int getSentSmsCount() {
 		return getSmsCount(SMS_URI_SENT);
 	}
@@ -522,9 +526,11 @@ public class CloudSmsProcesser {
 	    int threadDeleted = 0;
 	    for (String threadId : threadIdList) {
 	        Uri deleteUri = ContentUris.withAppendedId(Uri.parse(SMS_URI_THREADS), Long.valueOf(threadId));
-	        int rows = resolver.delete(deleteUri, null, null);
-	        if (rows > 0) {    // 删除短信条数
-	            threadDeleted++;
+	        if (deleteUri != null) {
+    	        int rows = resolver.delete(deleteUri, null, null);
+    	        if (rows > 0) {    // 删除短信条数
+    	            threadDeleted++;
+    	        }
 	        }
 	    }
 	    
@@ -569,8 +575,10 @@ public class CloudSmsProcesser {
         int rowsDeleted = 0;
         for (String id : idList) {
             Uri deleteUri = ContentUris.withAppendedId(Uri.parse(uri), Long.valueOf(id));
-            int rows = resolver.delete(deleteUri, null, null);
-            rowsDeleted += rows;
+            if (deleteUri != null) {
+                int rows = resolver.delete(deleteUri, null, null);
+                rowsDeleted += rows;
+            }
         }
         
         return rowsDeleted;

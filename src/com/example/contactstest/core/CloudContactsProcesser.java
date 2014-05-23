@@ -282,7 +282,8 @@ public class CloudContactsProcesser {
 	/**
 	 * 通过电话号码获取联系人信息
 	 * @param numberList
-	 * @return HashMap: key-电话号码
+	 * @return HashMap: key-电话号码 (
+	 * FIXME: 目前只处理一个号码对应一个联系人的情况，将来解决
 	 */
 	public HashMap<String, CloudContact> getContactsByNumber(List<String> numberList) {
 		checkInitialized();
@@ -303,11 +304,11 @@ public class CloudContactsProcesser {
 		    if (cursor == null)
 		        continue;
 		    
-		    while (cursor.moveToNext()) {
+		    if (cursor.moveToFirst()) {   // FIXME: 目前只处理一个号码对应一个联系人的情况
 		        Long contactId = cursor.getLong(cursor.getColumnIndex(PhoneLookup._ID));
-		        if (!contactIdList.contains(contactId)) {     // 有可能会查出多个相同的contact id
+		        numberIdPairList.add(new Pair<String, Long>(number, contactId));
+		        if (!contactIdList.contains(contactId)) {     // 去重：有可能多个号码对应一个联系人
     		        contactIdList.add(contactId);
-    		        numberIdPairList.add(new Pair<String, Long>(number, contactId));
 		        }
 		    }
 		    cursor.close();
