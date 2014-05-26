@@ -388,6 +388,15 @@ public class CloudContactsProcesser {
 		return numberContacts;
 	}
 	
+	/**
+	 * 新增联系人信息
+	 * @param name
+	 * @param phoneNumberList
+	 * @param emailList
+	 * @param notes
+	 * @param groupId
+	 * @return
+	 */
     public long addContact(String name,
             List<PhoneNumber> phoneNumberList, List<String> emailList, String notes, Long groupId) {
         if (TextUtils.isEmpty(name))
@@ -497,6 +506,11 @@ public class CloudContactsProcesser {
 	    return resultList;
 	}
 	
+	/**
+	 * 检测组id是否有效
+	 * @param groupId
+	 * @return
+	 */
 	public boolean isValidateGroudId(Long groupId) {
 	    if (groupId < 0)
 	        return false;
@@ -506,6 +520,10 @@ public class CloudContactsProcesser {
 	    return groups.containsKey(groupId);
 	}
 	
+	/**
+	 * 获取所有联系人组
+	 * @return key-groupId
+	 */
 	public HashMap<Long, CloudGroup> getGroups() {
 	    checkInitialized();
 	    LinkedHashMap<Long, CloudGroup> groups = new LinkedHashMap<Long, CloudGroup>();
@@ -540,6 +558,11 @@ public class CloudContactsProcesser {
 	    return groups;
 	}
 	
+	/**
+	 * 获取某一个联系人组中的所有联系人Id
+	 * @param groupId
+	 * @return
+	 */
 	public ArrayList<Long> getContactsIdInGroup(long groupId) {
 	    checkInitialized();
 	    if (groupId < 0)
