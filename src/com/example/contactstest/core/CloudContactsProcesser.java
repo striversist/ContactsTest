@@ -16,6 +16,7 @@ import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.OperationApplicationException;
 import android.database.Cursor;
@@ -68,6 +69,8 @@ public class CloudContactsProcesser {
             }
 		    deleteContacts(contactIdList2);
 		}
+		
+		addGroup("测试", null);
 	}
 	
 	private void checkInitialized() {
@@ -469,5 +472,42 @@ public class CloudContactsProcesser {
 	    }
 	    
 	    return contactsId;
+	}
+	
+	/**
+	 * 创建联系人群组
+	 * @param title
+	 * @param notes
+	 * @return 成功返回生成的id；失败返回-1
+	 */
+	public long addGroup(String title, String notes) {
+	    if (TextUtils.isEmpty(title))
+	        return -1;
+	    
+	    ContentResolver resolver = mContext.getContentResolver();
+	    ContentValues groupValues = new ContentValues();
+	    groupValues.put(Groups.TITLE, title);
+	    if (notes != null) {
+	        groupValues.put(Groups.NOTES, notes);
+	    }
+	    Uri groupUri = resolver.insert(Groups.CONTENT_URI, groupValues);
+	    if (groupUri == null)
+	        return -1;
+	    
+        Cursor cursor = resolver.query(groupUri, new String[] { Groups._ID },
+                null, null, null);
+        if (cursor == null) {
+            return -1;
+        }
+        
+        long resultId = -1;
+        try {
+            if (cursor.moveToNext()) {
+                resultId = cursor.getLong(cursor.getColumnIndex(Groups._ID));
+            }
+        } finally {
+            cursor.close();
+        }
+        return resultId;
 	}
 }
