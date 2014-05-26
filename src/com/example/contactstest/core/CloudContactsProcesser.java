@@ -8,15 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.example.contactstest.data.CloudContact;
-import com.example.contactstest.data.CloudGroup;
-import com.example.contactstest.data.CloudContact.PhoneNumber;
-
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.OperationApplicationException;
 import android.database.Cursor;
@@ -27,8 +22,8 @@ import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
 import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
-import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.PhoneLookup;
@@ -36,6 +31,10 @@ import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
+
+import com.example.contactstest.data.CloudContact;
+import com.example.contactstest.data.CloudContact.PhoneNumber;
+import com.example.contactstest.data.CloudGroup;
 
 public class CloudContactsProcesser {
 
@@ -72,7 +71,7 @@ public class CloudContactsProcesser {
 		    deleteContacts(contactIdList2);
 		}
 		
-//		addGroup("测试", null);
+//		addGroup("测试组2", null);
 		List<PhoneNumber> phoneNumberList = new ArrayList<CloudContact.PhoneNumber>();
 		PhoneNumber phoneNumber = new PhoneNumber();
 		phoneNumber.type = Phone.TYPE_HOME;
@@ -80,7 +79,7 @@ public class CloudContactsProcesser {
 		phoneNumberList.add(phoneNumber);
 		List<String> emailList = new ArrayList<String>();
 		emailList.add("test@tencent.com");
-		long contactId = addContact("测试员1", phoneNumberList, emailList, "我的测试notes", 1L);
+		long contactId = addContact("测试员2", phoneNumberList, emailList, "我的测试notes", 1L);
 		Log.d("", String.valueOf(contactId));
 	}
 	
@@ -574,30 +573,27 @@ public class CloudContactsProcesser {
 	    if (TextUtils.isEmpty(title))
 	        return -1;
 	    
-	    ContentResolver resolver = mContext.getContentResolver();
-	    ContentValues groupValues = new ContentValues();
-	    groupValues.put(Groups.TITLE, title);
-	    if (notes != null) {
-	        groupValues.put(Groups.NOTES, notes);
-	    }
-	    Uri groupUri = resolver.insert(Groups.CONTENT_URI, groupValues);
-	    if (groupUri == null)
-	        return -1;
+	    ArrayList<ContentProviderOperation> operList = new ArrayList<ContentProviderOperation>();
+        ContentProviderOperation.Builder builder = ContentProviderOperation
+                .newInsert(Groups.CONTENT_URI).withValue(Groups.TITLE, title);
+        if (!TextUtils.isEmpty(notes)) {
+            builder.withValue(Groups.NOTES, notes);
+        }
+        operList.add(builder.build());
 	    
-        Cursor cursor = resolver.query(groupUri, new String[] { Groups._ID },
-                null, null, null);
-        if (cursor == null) {
-            return -1;
-        }
-        
         long resultId = -1;
-        try {
-            if (cursor.moveToNext()) {
-                resultId = cursor.getLong(cursor.getColumnIndex(Groups._ID));
+	    ContentResolver resolver = mContext.getContentResolver();
+	    try {
+            ContentProviderResult[] resultArray = resolver.applyBatch(ContactsContract.AUTHORITY, operList);
+            if (resultArray != null && resultArray.length > 0) {
+                resultId = ContentUris.parseId(resultArray[0].uri);
             }
-        } finally {
-            cursor.close();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
         }
+	    
         return resultId;
 	}
 }
