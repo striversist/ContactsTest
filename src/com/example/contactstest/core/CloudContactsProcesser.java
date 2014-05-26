@@ -29,7 +29,6 @@ import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
 
 import com.example.contactstest.data.CloudContact;
@@ -47,6 +46,7 @@ public class CloudContactsProcesser {
 	}
 	
 	public void runTest() {
+	    // 查询测试
 		getContactsCount();
 		getAllContacts();
 		HashMap<Long, CloudContact> recentContacts = getRecentContacts(10);
@@ -59,28 +59,31 @@ public class CloudContactsProcesser {
 		getContactsIdInGroup(4);
 		getContactsIdInGroup(5);
 		
-		List<String> numberList = new ArrayList<String>();
-		numberList.add("123456");
-		numberList.add("123456789");
-		HashMap<String, CloudContact> numberContacts = getContactsByNumber(numberList);
-		if (numberContacts != null) {
-		    List<Long> contactIdList2 = new ArrayList<Long>();
-		    for (CloudContact contact : numberContacts.values()) {
-		        contactIdList2.add(contact.getId());
-            }
-		    deleteContacts(contactIdList2);
-		}
+		// 删除联系人
+//		List<String> numberList = new ArrayList<String>();
+//		numberList.add("123456");
+//		numberList.add("123456789");
+//		HashMap<String, CloudContact> numberContacts = getContactsByNumber(numberList);
+//		if (numberContacts != null) {
+//		    List<Long> contactIdList2 = new ArrayList<Long>();
+//		    for (CloudContact contact : numberContacts.values()) {
+//		        contactIdList2.add(contact.getId());
+//            }
+//		    deleteContacts(contactIdList2);
+//		}
 		
+		// 新增联系人组
 //		addGroup("测试组2", null);
-		List<PhoneNumber> phoneNumberList = new ArrayList<CloudContact.PhoneNumber>();
-		PhoneNumber phoneNumber = new PhoneNumber();
-		phoneNumber.type = Phone.TYPE_HOME;
-		phoneNumber.number = "123456";
-		phoneNumberList.add(phoneNumber);
-		List<String> emailList = new ArrayList<String>();
-		emailList.add("test@tencent.com");
-		long contactId = addContact("测试员2", phoneNumberList, emailList, "我的测试notes", 1L);
-		Log.d("", String.valueOf(contactId));
+		
+		// 新增联系人
+//		List<PhoneNumber> phoneNumberList = new ArrayList<CloudContact.PhoneNumber>();
+//		PhoneNumber phoneNumber = new PhoneNumber();
+//		phoneNumber.type = Phone.TYPE_HOME;
+//		phoneNumber.number = "123456";
+//		phoneNumberList.add(phoneNumber);
+//		List<String> emailList = new ArrayList<String>();
+//		emailList.add("test@tencent.com");
+//		long contactId = addContact("测试员3", phoneNumberList, emailList, "我的测试notes", 1L);
 	}
 	
 	private void checkInitialized() {
