@@ -389,6 +389,26 @@ public class CloudContactsProcesser {
 	}
 	
 	/**
+	 * 新增联系人信息（简化版）
+	 * @param name
+	 * @param phoneNumber
+	 * @param email
+	 * @param notes
+	 * @param groupId
+	 * @return
+	 */
+    public long addContact(String name, PhoneNumber phoneNumber, String email,
+            String notes, Long groupId) {
+        List<PhoneNumber> phoneNumberList = new ArrayList<PhoneNumber>();
+        phoneNumberList.add(phoneNumber);
+
+        List<String> emailList = new ArrayList<String>();
+        emailList.add(email);
+
+        return addContact(name, phoneNumberList, emailList, notes, groupId);
+    }
+	
+	/**
 	 * 新增联系人信息
 	 * @param name
 	 * @param phoneNumberList
