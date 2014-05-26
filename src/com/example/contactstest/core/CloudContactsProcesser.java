@@ -34,10 +34,12 @@ import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 
 public class CloudContactsProcesser {
 
+    private static final String COL_EMAIL_ADDRESS = "data1";
 	private Context mContext;
 	
 	public CloudContactsProcesser(Context context) {
@@ -70,7 +72,16 @@ public class CloudContactsProcesser {
 		    deleteContacts(contactIdList2);
 		}
 		
-		addGroup("测试", null);
+//		addGroup("测试", null);
+		List<PhoneNumber> phoneNumberList = new ArrayList<CloudContact.PhoneNumber>();
+		PhoneNumber phoneNumber = new PhoneNumber();
+		phoneNumber.type = Phone.TYPE_HOME;
+		phoneNumber.number = "123456";
+		phoneNumberList.add(phoneNumber);
+		List<String> emailList = new ArrayList<String>();
+		emailList.add("test@tencent.com");
+		long contactId = addContact("测试员1", phoneNumberList, emailList, "我的测试notes", 1L);
+		Log.d("", String.valueOf(contactId));
 	}
 	
 	private void checkInitialized() {
@@ -375,6 +386,76 @@ public class CloudContactsProcesser {
 		return numberContacts;
 	}
 	
+    public long addContact(String name,
+            List<PhoneNumber> phoneNumberList, List<String> emailList, String notes, Long groupId) {
+        if (TextUtils.isEmpty(name))
+            return -1;
+        
+        long resultId = -1;
+        ArrayList<ContentProviderOperation> operList = new ArrayList<ContentProviderOperation>();
+        operList.add(ContentProviderOperation
+                .newInsert(RawContacts.CONTENT_URI)
+                .withValue(RawContacts.ACCOUNT_TYPE, null)
+                .withValue(RawContacts.ACCOUNT_NAME, null).build());
+        
+        operList.add(ContentProviderOperation
+                .newInsert(Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                .withValue(Data.MIMETYPE, CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(CommonDataKinds.StructuredName.DISPLAY_NAME, name).build());
+        if (phoneNumberList != null) {
+            for (PhoneNumber phoneNumber : phoneNumberList) {
+                ContentProviderOperation.Builder builder = ContentProviderOperation
+                        .newInsert(Data.CONTENT_URI)
+                        .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                        .withValue(Data.MIMETYPE, CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                        .withValue(CommonDataKinds.Phone.NUMBER, phoneNumber.number)
+                        .withValue(CommonDataKinds.Phone.TYPE, phoneNumber.type);
+                if (!TextUtils.isEmpty(phoneNumber.label)) {
+                    builder.withValue(CommonDataKinds.Phone.LABEL, phoneNumber.label);
+                }
+                operList.add(builder.build());
+            }
+        }
+        if (emailList != null) {
+            for (String email : emailList) {
+                operList.add(ContentProviderOperation.
+                        newInsert(Data.CONTENT_URI)
+                        .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                        .withValue(Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
+                        .withValue(COL_EMAIL_ADDRESS, email).build());
+            }
+        }
+        if (!TextUtils.isEmpty(notes)) {
+            operList.add(ContentProviderOperation
+                    .newInsert(Data.CONTENT_URI)
+                    .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                    .withValue(Data.MIMETYPE, CommonDataKinds.Note.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.Note.NOTE, notes).build());
+        }
+        if (isValidateGroudId(groupId)) {
+            operList.add(ContentProviderOperation
+                    .newInsert(Data.CONTENT_URI)
+                    .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                    .withValue(Data.MIMETYPE, CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.GroupMembership.GROUP_ROW_ID, groupId).build());
+        }
+        
+        ContentResolver resolver = mContext.getContentResolver();
+        try {
+            ContentProviderResult[] resultArray = resolver.applyBatch(ContactsContract.AUTHORITY, operList);
+            if (resultArray != null && resultArray.length > 0) {
+                resultId = ContentUris.parseId(resultArray[0].uri);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
+        
+        return resultId;
+    }
+	
 	public boolean deleteContact(Long contactId) {
 	    List<Long> contactIdList = new ArrayList<Long>(1);
 	    contactIdList.add(contactId);
@@ -412,6 +493,15 @@ public class CloudContactsProcesser {
         }
 	    
 	    return resultList;
+	}
+	
+	public boolean isValidateGroudId(Long groupId) {
+	    if (groupId < 0)
+	        return false;
+	    HashMap<Long, CloudGroup> groups = getGroups();
+	    if (groups == null)
+	        return false;
+	    return groups.containsKey(groupId);
 	}
 	
 	public HashMap<Long, CloudGroup> getGroups() {
