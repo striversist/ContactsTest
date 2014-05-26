@@ -12,13 +12,17 @@ import com.example.contactstest.data.CloudContact;
 import com.example.contactstest.data.CloudGroup;
 import com.example.contactstest.data.CloudContact.PhoneNumber;
 
+import android.content.ContentProviderOperation;
+import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.OperationApplicationException;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
 import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
@@ -27,6 +31,8 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.PhoneLookup;
+import android.provider.ContactsContract.RawContacts;
+import android.text.TextUtils;
 import android.util.Pair;
 
 public class CloudContactsProcesser {
@@ -50,6 +56,18 @@ public class CloudContactsProcesser {
 		getGroups();
 		getContactsIdInGroup(4);
 		getContactsIdInGroup(5);
+		
+		List<String> numberList = new ArrayList<String>();
+		numberList.add("123456");
+		numberList.add("123456789");
+		HashMap<String, CloudContact> numberContacts = getContactsByNumber(numberList);
+		if (numberContacts != null) {
+		    List<Long> contactIdList2 = new ArrayList<Long>();
+		    for (CloudContact contact : numberContacts.values()) {
+		        contactIdList2.add(contact.getId());
+            }
+		    deleteContacts(contactIdList2);
+		}
 	}
 	
 	private void checkInitialized() {
@@ -288,6 +306,22 @@ public class CloudContactsProcesser {
 	
 	/**
 	 * 通过电话号码获取联系人信息
+	 * @param number
+	 * @return 若存在联系人则返回联系人信息；若不存在则返回null
+	 */
+	public CloudContact getContactByNumber(String number) {
+	    if (TextUtils.isEmpty(number))
+	        return null;
+	    List<String> numberList = new ArrayList<String>(1);
+	    numberList.add(number);
+	    HashMap<String, CloudContact> numberContacts = getContactsByNumber(numberList);
+	    if (numberContacts == null || !numberContacts.containsKey(number))
+	        return null;
+	    return numberContacts.get(number);
+	}
+	
+	/**
+	 * 通过电话号码获取联系人信息
 	 * @param numberList
 	 * @return HashMap: key-电话号码 (
 	 * FIXME: 目前只处理一个号码对应一个联系人的情况，将来解决
@@ -336,6 +370,45 @@ public class CloudContactsProcesser {
 		}
 		
 		return numberContacts;
+	}
+	
+	public boolean deleteContact(Long contactId) {
+	    List<Long> contactIdList = new ArrayList<Long>(1);
+	    contactIdList.add(contactId);
+	    List<Boolean> resultList = deleteContacts(contactIdList);
+	    if (resultList == null || resultList.isEmpty())
+	        return false;
+	    return resultList.get(0).booleanValue();
+	}
+	
+	public List<Boolean> deleteContacts(List<Long> contactIdList) {
+	    if (contactIdList == null)
+	        return null;
+	    
+	    List<Boolean> resultList = new ArrayList<Boolean>();
+	    ArrayList<ContentProviderOperation> operList = new ArrayList<ContentProviderOperation>();
+	    for (Long contactId : contactIdList) {
+	        ContentProviderOperation.Builder builder = ContentProviderOperation.newDelete(RawContacts.CONTENT_URI);
+	        builder.withSelection(RawContacts.CONTACT_ID + "=?", new String[]{String.valueOf(contactId)});
+	        operList.add(builder.build());
+	    }
+	    ContentResolver resolver = mContext.getContentResolver();
+	    try {
+            ContentProviderResult[] resultArray = resolver.applyBatch(ContactsContract.AUTHORITY, operList);
+            for (ContentProviderResult providerResult : resultArray) {
+                if (providerResult.count > 0) {
+                    resultList.add(true);
+                } else {
+                    resultList.add(false);
+                }
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
+	    
+	    return resultList;
 	}
 	
 	public HashMap<Long, CloudGroup> getGroups() {
