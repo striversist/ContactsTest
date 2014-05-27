@@ -491,41 +491,18 @@ public class CloudSmsProcesser {
 		return smsMap;
 	}
 	
+	/**
+	 * 根据smsId list获取相应的CloudSms结构
+	 * @param smsIdList
+	 * @return key-smsId, or null
+	 */
 	public HashMap<String, CloudSms> getSms(List<String> smsIdList) {
 	    if (smsIdList == null)
 	        return null;
 	    
-	    LinkedHashMap<String, CloudSms> smsMap = new LinkedHashMap<String, CloudSms>();
-        ContentResolver resolver = mContext.getContentResolver();
-        
         String where = CloudContactUtils.joinWhere(COL_ID, smsIdList);
         String orderBy = "date desc";
-        Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[]{COL_ID, COL_THREAD_ID, COL_ADDRESS,
-                COL_DATE, COL_READ, COL_STATUS, COL_TYPE, COL_SUBJECT, COL_BODY},
-                where, null, orderBy);
-        if (cursor == null) {
-            return null;
-        }
-        
-        try {
-            while (cursor.moveToNext()) {
-                CloudSms sms = new CloudSms();
-                sms.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
-                sms.setAddress(cursor.getString(cursor.getColumnIndex(COL_ADDRESS)));
-                sms.setBody(cursor.getString(cursor.getColumnIndex(COL_BODY)));
-                sms.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
-                sms.setRead(cursor.getString(cursor.getColumnIndex(COL_READ)));
-                sms.setStatus(cursor.getString(cursor.getColumnIndex(COL_STATUS)));
-                sms.setSubject(cursor.getString(cursor.getColumnIndex(COL_SUBJECT)));
-                sms.setThreadId(cursor.getString(cursor.getColumnIndex(COL_THREAD_ID)));
-                sms.setType(cursor.getString(cursor.getColumnIndex(COL_TYPE)));
-                smsMap.put(sms.getId(), sms);
-            }
-        } finally {
-            cursor.close();
-        }
-        
-        return smsMap;
+        return getSms(SMS_URI_ALL, 0, 0, where, orderBy);
 	}
 	
 	public boolean writeSmsToDatabase(String uri, CloudSms sms) {
@@ -637,7 +614,7 @@ public class CloudSmsProcesser {
 	 * 在指定threadId中搜索短信记录
 	 * @param keyword
 	 * @param threadId
-	 * @return
+	 * @return 搜索结果, or null
 	 */
 	public CloudSmsSearchResultThreadEntry searchInThread(String keyword, String threadId) {
 	    if (keyword == null || threadId == null)
@@ -687,7 +664,6 @@ public class CloudSmsProcesser {
         } finally {
             cursor.close();
         }
-        
         
         return resultEntries;
 	}
