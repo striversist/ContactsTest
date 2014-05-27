@@ -658,7 +658,7 @@ public class CloudSmsProcesser {
         if (keyword == null)
             return null;
 
-        LinkedHashMap<String, CloudSmsSearchResultThreadEntry> resultEntryList = new LinkedHashMap<String, CloudSmsSearchResultThreadEntry>();
+        LinkedHashMap<String, CloudSmsSearchResultThreadEntry> resultEntries = new LinkedHashMap<String, CloudSmsSearchResultThreadEntry>();
         if (orderBy == null) {
             orderBy = "date desc";
         }
@@ -677,18 +677,18 @@ public class CloudSmsProcesser {
             while (cursor.moveToNext()) {
                 String smsId = cursor.getString(cursor.getColumnIndex(COL_ID));
                 String smsThreadId = cursor.getString(cursor.getColumnIndex(COL_THREAD_ID));
-                if (!resultEntryList.containsKey(smsThreadId)) {    // 发现新的thread
+                if (!resultEntries.containsKey(smsThreadId)) {    // 发现新的thread
                     CloudSmsSearchResultThreadEntry threadEntry = new CloudSmsSearchResultThreadEntry();
                     threadEntry.setThreadId(smsThreadId);
-                    resultEntryList.put(smsThreadId, threadEntry);
+                    resultEntries.put(smsThreadId, threadEntry);
                 }
-                resultEntryList.get(smsThreadId).addSmsId(smsId);
+                resultEntries.get(smsThreadId).addSmsId(smsId);
             }
         } finally {
             cursor.close();
         }
         
         
-        return resultEntryList;
+        return resultEntries;
 	}
 }
