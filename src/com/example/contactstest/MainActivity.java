@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.example.contactstest.core.CloudCallManager;
 import com.example.contactstest.core.CloudContactsProcesser;
+import com.example.contactstest.core.CloudSmsProcesser;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -39,14 +40,14 @@ public class MainActivity extends Activity {
 	}
 	
 	private void test() {
-		CloudContactsProcesser processer = new CloudContactsProcesser(getApplicationContext());
-		processer.runTest();
+//		CloudContactsProcesser processer = new CloudContactsProcesser(getApplicationContext());
+//		processer.runTest();
 //		
 //		CloudCallsProcesser processer = new CloudCallsProcesser(getApplicationContext());
 //		processer.runTest();
 //		
-//		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
-//		processer.runTest();
+		CloudSmsProcesser processer = new CloudSmsProcesser(getApplicationContext());
+		processer.runTest();
 		
 //		CloudMixProcesser processer = new CloudMixProcesser(getApplicationContext());
 //		processer.runTest();

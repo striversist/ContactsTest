@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.example.contactstest.data.CloudSms;
+import com.example.contactstest.data.CloudSmsSearchResultThreadEntry;
 import com.example.contactstest.data.CloudSmsThread;
 
 import android.content.ContentResolver;
@@ -83,8 +84,19 @@ public class CloudSmsProcesser {
 			Log.d("", sms.toString());
 		}
 		
-		boolean result = deleteThread("114");
-		Log.d("", "" + result);
+//		boolean result = deleteThread("114");
+//		Log.d("", "" + result);
+		
+		HashMap<String, CloudSmsSearchResultThreadEntry> entries = search("测试", null, null);
+		for (CloudSmsSearchResultThreadEntry threadEntry : entries.values()) {
+		    String threadId = threadEntry.getThreadId();
+		    ArrayList<String> smsIdList = threadEntry.getSmsIdList();
+		    Log.d("", threadId + smsIdList);
+		}
+		CloudSmsSearchResultThreadEntry entry = searchInThread("测试", "121");
+		if (entry != null) {
+		    getSms(entry.getSmsIdList());
+		}
 	}
 	
 	public int getAllSmsCount() {
@@ -450,7 +462,7 @@ public class CloudSmsProcesser {
 		}
 		
 		try {
-			if (cursor.getCount() == 0)	// 没有通话记录
+			if (cursor.getCount() == 0)	// 没有短信记录
 				return smsMap;
 			
 			if (startPos >= cursor.getCount())
@@ -477,6 +489,43 @@ public class CloudSmsProcesser {
 		}
 		
 		return smsMap;
+	}
+	
+	public HashMap<String, CloudSms> getSms(List<String> smsIdList) {
+	    if (smsIdList == null)
+	        return null;
+	    
+	    LinkedHashMap<String, CloudSms> smsMap = new LinkedHashMap<String, CloudSms>();
+        ContentResolver resolver = mContext.getContentResolver();
+        
+        String where = CloudContactUtils.joinWhere(COL_ID, smsIdList);
+        String orderBy = "date desc";
+        Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[]{COL_ID, COL_THREAD_ID, COL_ADDRESS,
+                COL_DATE, COL_READ, COL_STATUS, COL_TYPE, COL_SUBJECT, COL_BODY},
+                where, null, orderBy);
+        if (cursor == null) {
+            return null;
+        }
+        
+        try {
+            while (cursor.moveToNext()) {
+                CloudSms sms = new CloudSms();
+                sms.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
+                sms.setAddress(cursor.getString(cursor.getColumnIndex(COL_ADDRESS)));
+                sms.setBody(cursor.getString(cursor.getColumnIndex(COL_BODY)));
+                sms.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
+                sms.setRead(cursor.getString(cursor.getColumnIndex(COL_READ)));
+                sms.setStatus(cursor.getString(cursor.getColumnIndex(COL_STATUS)));
+                sms.setSubject(cursor.getString(cursor.getColumnIndex(COL_SUBJECT)));
+                sms.setThreadId(cursor.getString(cursor.getColumnIndex(COL_THREAD_ID)));
+                sms.setType(cursor.getString(cursor.getColumnIndex(COL_TYPE)));
+                smsMap.put(sms.getId(), sms);
+            }
+        } finally {
+            cursor.close();
+        }
+        
+        return smsMap;
 	}
 	
 	public boolean writeSmsToDatabase(String uri, CloudSms sms) {
@@ -582,5 +631,64 @@ public class CloudSmsProcesser {
         }
         
         return rowsDeleted;
+	}
+	
+	/**
+	 * 在指定threadId中搜索短信记录
+	 * @param keyword
+	 * @param threadId
+	 * @return
+	 */
+	public CloudSmsSearchResultThreadEntry searchInThread(String keyword, String threadId) {
+	    if (keyword == null || threadId == null)
+	        return null;
+	    HashMap<String, CloudSmsSearchResultThreadEntry> entries = search(keyword, threadId, null);
+	    if (entries == null)
+	        return null;
+	    return entries.get(threadId);
+	}
+	
+	/**
+	 * 在指定threadId中的搜索短信记录；若threadId为null，则全局搜索。默认按时间倒序
+	 * @param keyword
+	 * @param threadId
+	 * @return key-threadId
+	 */
+	private HashMap<String, CloudSmsSearchResultThreadEntry> search(String keyword, String threadId, String orderBy) {
+        if (keyword == null)
+            return null;
+
+        LinkedHashMap<String, CloudSmsSearchResultThreadEntry> resultEntryList = new LinkedHashMap<String, CloudSmsSearchResultThreadEntry>();
+        if (orderBy == null) {
+            orderBy = "date desc";
+        }
+        String where = String.format("body like '%%%s%%'", keyword);
+        if (threadId != null) {
+            where += " AND " + COL_THREAD_ID + "=" + threadId;
+        }
+        ContentResolver resolver = mContext.getContentResolver();
+        Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[]{ COL_ID, COL_THREAD_ID },
+                where, null, orderBy);
+        if (cursor == null) {
+            return null;
+        }
+        
+        try {
+            while (cursor.moveToNext()) {
+                String smsId = cursor.getString(cursor.getColumnIndex(COL_ID));
+                String smsThreadId = cursor.getString(cursor.getColumnIndex(COL_THREAD_ID));
+                if (!resultEntryList.containsKey(smsThreadId)) {    // 发现新的thread
+                    CloudSmsSearchResultThreadEntry threadEntry = new CloudSmsSearchResultThreadEntry();
+                    threadEntry.setThreadId(smsThreadId);
+                    resultEntryList.put(smsThreadId, threadEntry);
+                }
+                resultEntryList.get(smsThreadId).addSmsId(smsId);
+            }
+        } finally {
+            cursor.close();
+        }
+        
+        
+        return resultEntryList;
 	}
 }
