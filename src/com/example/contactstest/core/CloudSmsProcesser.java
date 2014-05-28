@@ -191,7 +191,7 @@ public class CloudSmsProcesser {
 		ContentResolver resolver = mContext.getContentResolver();
 		Cursor cursor = resolver.query(Uri.parse(SMS_URI_THREADS), 
 				new String[] { COL_ID, COL_DATE, COL_MSG_COUNT, COL_READ, COL_SNIPPET, COL_RECIPIENT_IDS },
-				where, null, "date desc");
+				where, null, "date DESC");
 		if (cursor == null) {
 			return null;
 		}
@@ -253,7 +253,7 @@ public class CloudSmsProcesser {
 		String where = CloudContactUtils.joinWhere(COL_ID, threadIdList);
 		Cursor cursor = resolver.query(Uri.parse(SMS_URI_THREADS), 
 				new String[] { COL_ID, COL_DATE, COL_MSG_COUNT, COL_READ, COL_SNIPPET, COL_RECIPIENT_IDS },
-				where, null, "date desc");
+				where, null, "date DESC");
 		if (cursor == null) {
 			return null;
 		}
@@ -587,11 +587,11 @@ public class CloudSmsProcesser {
 	        return false;
 	    
 	    ContentValues values = new ContentValues();
-	    values.put("address", sms.getAddress());
-	    values.put("date", sms.getDate());                
-	    values.put("read", sms.getRead());
-	    values.put("type", sms.getType());
-	    values.put("body", sms.getBody());
+	    values.put(COL_ADDRESS, sms.getAddress());
+	    values.put(COL_DATE, sms.getDate());                
+	    values.put(COL_READ, sms.getRead());
+	    values.put(COL_TYPE, sms.getType());
+	    values.put(COL_BODY, sms.getBody());
 	    
 	    Uri result = mContext.getContentResolver().insert(Uri.parse(uri), values);
 	    if (result == null) {
@@ -713,9 +713,9 @@ public class CloudSmsProcesser {
 
         LinkedHashMap<String, CloudSmsSearchResultThreadEntry> resultEntries = new LinkedHashMap<String, CloudSmsSearchResultThreadEntry>();
         if (orderBy == null) {
-            orderBy = "date desc";
+            orderBy = "date DESC";
         }
-        String where = String.format("body like '%%%s%%'", keyword);
+        String where = String.format(Locale.getDefault(), "%s like '%%%s%%'", COL_BODY, keyword);
         if (threadId != null) {
             where += " AND " + COL_THREAD_ID + "=" + threadId;
         }
