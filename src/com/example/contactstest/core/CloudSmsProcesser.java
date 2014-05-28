@@ -84,22 +84,6 @@ public class CloudSmsProcesser {
 		for (CloudSms sms : smss.values()) {
 			Log.d("", sms.toString());
 		}
-		
-//		boolean result = deleteThread("114");
-//		Log.d("", "" + result);
-		
-		HashMap<String, CloudSmsSearchResultThreadEntry> entries = search("测试", null, null);
-		for (CloudSmsSearchResultThreadEntry threadEntry : entries.values()) {
-		    String threadId = threadEntry.getThreadId();
-		    ArrayList<String> smsIdList = threadEntry.getSmsIdList();
-		    Log.d("", threadId + smsIdList);
-		}
-		CloudSmsSearchResultThreadEntry entry = searchInThread("测试", "121");
-		if (entry != null) {
-		    getSms(entry.getSmsIdList());
-		    getSmsInThreadNearby(entry.getThreadId(), "244", 5, true);
-		    getSmsInThreadNearby(entry.getThreadId(), "244", -5, false);
-		}
 	}
 	
 	public int getAllSmsCount() {
@@ -707,7 +691,7 @@ public class CloudSmsProcesser {
 	 * @param threadId
 	 * @return key-threadId
 	 */
-	private HashMap<String, CloudSmsSearchResultThreadEntry> search(String keyword, String threadId, String orderBy) {
+	public HashMap<String, CloudSmsSearchResultThreadEntry> search(String keyword, String threadId, String orderBy) {
         if (keyword == null)
             return null;
 

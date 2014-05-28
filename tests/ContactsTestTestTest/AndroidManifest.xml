@@ -5,6 +5,23 @@
     android:versionName="1.0" >
 
     <uses-sdk android:minSdkVersion="8" />
+    
+    <!-- 联系人权限 -->   
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
+    <!-- 拨打电话权限 -->  
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <!-- 通话记录权限 -->   
+    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG"/>
+    <!-- 短信读写权限 -->   
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- 拨打电话权限 -->  
+    <uses-permission android:name="android.permission.CALL_PHONE"/>    
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
 
     <instrumentation
         android:name="android.test.InstrumentationTestRunner"
