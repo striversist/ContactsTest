@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 
 import com.example.contactstest.data.CloudSms;
 import com.example.contactstest.data.CloudSmsSearchResultThreadEntry;
@@ -96,6 +97,8 @@ public class CloudSmsProcesser {
 		CloudSmsSearchResultThreadEntry entry = searchInThread("测试", "121");
 		if (entry != null) {
 		    getSms(entry.getSmsIdList());
+		    getSmsInThreadNearby(entry.getThreadId(), "244", 5, true);
+		    getSmsInThreadNearby(entry.getThreadId(), "244", -5, false);
 		}
 	}
 	
@@ -452,7 +455,7 @@ public class CloudSmsProcesser {
 		LinkedHashMap<String, CloudSms> smsMap = new LinkedHashMap<String, CloudSms>();
 		ContentResolver resolver = mContext.getContentResolver();
 		if (orderBy == null) {
-			orderBy = "date desc";
+			orderBy = "date DESC";
 		}
 		Cursor cursor = resolver.query(Uri.parse(uri), new String[]{COL_ID, COL_THREAD_ID, COL_ADDRESS,
 				COL_DATE, COL_READ, COL_STATUS, COL_TYPE, COL_SUBJECT, COL_BODY},
@@ -501,8 +504,81 @@ public class CloudSmsProcesser {
 	        return null;
 	    
         String where = CloudContactUtils.joinWhere(COL_ID, smsIdList);
-        String orderBy = "date desc";
-        return getSms(SMS_URI_ALL, 0, 0, where, orderBy);
+        return getSms(SMS_URI_ALL, 0, 0, where, null);
+	}
+	
+	/**
+	 * 获取指定threadId中某smsId附近的sms信息
+	 * @param threadId
+	 * @param smsId
+	 * @param offset 表示偏移范围（正数：时间增大偏移；复数：时间减小；0：返回空信息）
+	 * @param includeSelf 返回中是否包含指定的smsId
+	 * @return key-sms id, 顺序为date从新到旧（即sms id从大到小）
+	 */
+	public HashMap<String, CloudSms> getSmsInThreadNearby(String threadId, String smsId, int offset, boolean includeSelf) {
+	    if (threadId == null || smsId == null)
+	        return null;
+	    String token = "";
+	    if (offset > 0) {
+	        if (includeSelf) {
+	            token = ">=";
+	        } else {
+	            token = ">";
+	        }
+	    } else if (offset < 0) {
+	        if (includeSelf) {
+	            token = "<=";
+	        } else {
+	            token = "<";
+	        }
+	    } else {   // offset = 0
+	        token = "=";
+	    }
+	    
+	    String where = String
+                .format(Locale.getDefault(), "%s=%s AND %s%s%s", COL_THREAD_ID, threadId,
+                        COL_ID, token, smsId);
+	    if (offset <= 0) {
+            String orderBy = String.format(Locale.getDefault(),
+                    "%s limit %d", "date DESC", Math.abs(offset));
+    	    return getSms(SMS_URI_ALL, 0, 0, where, orderBy);
+	    } else {
+	        String orderBy = String.format(Locale.getDefault(),
+                    "%s limit %d", "date ASC", Math.abs(offset));
+	        LinkedHashMap<String, CloudSms> smsMap = new LinkedHashMap<String, CloudSms>();
+	        ContentResolver resolver = mContext.getContentResolver();
+	        Cursor cursor = resolver.query(Uri.parse(SMS_URI_ALL), new String[]{COL_ID, COL_THREAD_ID, COL_ADDRESS,
+	                COL_DATE, COL_READ, COL_STATUS, COL_TYPE, COL_SUBJECT, COL_BODY},
+	                where, null, orderBy);
+	        if (cursor == null) {
+	            return null;
+	        }
+	        
+	        try {
+	            if (cursor.getCount() == 0) // 没有短信记录
+	                return smsMap;
+	            
+	            if (!cursor.moveToLast())
+	                return smsMap;
+	            
+	            do {
+	                CloudSms sms = new CloudSms();
+	                sms.setId(cursor.getString(cursor.getColumnIndex(COL_ID)));
+	                sms.setAddress(cursor.getString(cursor.getColumnIndex(COL_ADDRESS)));
+	                sms.setBody(cursor.getString(cursor.getColumnIndex(COL_BODY)));
+	                sms.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
+	                sms.setRead(cursor.getString(cursor.getColumnIndex(COL_READ)));
+	                sms.setStatus(cursor.getString(cursor.getColumnIndex(COL_STATUS)));
+	                sms.setSubject(cursor.getString(cursor.getColumnIndex(COL_SUBJECT)));
+	                sms.setThreadId(cursor.getString(cursor.getColumnIndex(COL_THREAD_ID)));
+	                sms.setType(cursor.getString(cursor.getColumnIndex(COL_TYPE)));
+	                smsMap.put(sms.getId(), sms);
+	            } while (cursor.moveToPrevious() && (smsMap.size() < Math.abs(offset)));
+	        } finally {
+	            cursor.close();
+	        }
+	        return smsMap;
+	    }
 	}
 	
 	public boolean writeSmsToDatabase(String uri, CloudSms sms) {
