@@ -164,6 +164,7 @@ public class CloudContactsProcesser {
 			if (!cursor.moveToPosition(startPos))
 				return null;
 			
+			List<Long> contactIdList = new ArrayList<Long>();
 			do {
 				CloudContact contact = new CloudContact();
 				contact.setId(cursor.getLong(cursor.getColumnIndex(Contacts._ID)));
@@ -172,11 +173,12 @@ public class CloudContactsProcesser {
 				contact.setTimesContacted(cursor.getInt(cursor.getColumnIndex(Contacts.TIMES_CONTACTED)));
 				contact.setLastTimeContacted(cursor.getLong(cursor.getColumnIndex(Contacts.LAST_TIME_CONTACTED)));
 				contacts.put(contact.getId(), contact);
+				contactIdList.add(contact.getId());
 			} while (cursor.moveToNext() && (contacts.size() < num || num == 0));
 			
-			// TODO: 这里可以加where做优化
+			String phoneWhere = CloudContactUtils.joinWhere(Phone.CONTACT_ID, contactIdList); 
 			Cursor phoneCursor = resolver.query(CommonDataKinds.Phone.CONTENT_URI,
-					new String[]{Phone.CONTACT_ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL}, null, null, null);
+					new String[]{Phone.CONTACT_ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL}, phoneWhere, null, null);
 			if (phoneCursor != null) {
     			while (phoneCursor.moveToNext()) {
     				long id = phoneCursor.getLong(phoneCursor.getColumnIndex(Phone.CONTACT_ID));
