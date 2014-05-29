@@ -120,22 +120,35 @@ public class CloudContactsProcesser {
 	}
 	
 	/**
+	 * 获取收藏（标星）的常用联系人
+	 * @return
+	 */
+	public HashMap<Long, CloudContact> getStarredContacts() {
+	    String where = Contacts.STARRED + "=" + "1";
+	    return getContacts(Contacts.CONTENT_URI, 0, 0, where, null);
+	}
+	
+	/**
 	 * 获取从startPos开始，num个联系人信息
 	 * @param startPos
 	 * @param num 获取个数；若为0，则获取从startPos开始至结束的所有联系人信息
 	 * @return
 	 */
 	private HashMap<Long, CloudContact> getContacts(int startPos, int num, String orderBy) {
+	    return getContacts(Contacts.CONTENT_URI, startPos, num, null, orderBy);
+	}
+	
+	private HashMap<Long, CloudContact> getContacts(Uri uri, int startPos, int num, String where, String orderBy) {
 		checkInitialized();
 		if (startPos < 0 || num < 0)
 			return null;
 		
 		LinkedHashMap<Long, CloudContact> contacts = new LinkedHashMap<Long, CloudContact>();
 		ContentResolver resolver = mContext.getContentResolver();
-		Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, 
+		Cursor cursor = resolver.query(uri, 
 				new String[]{Contacts._ID, Contacts.DISPLAY_NAME, Contacts.PHOTO_ID,
 					Contacts.TIMES_CONTACTED, Contacts.LAST_TIME_CONTACTED},
-				null, null, orderBy);
+				where, null, orderBy);
 		if (cursor == null) {
 			return null;
 		}
