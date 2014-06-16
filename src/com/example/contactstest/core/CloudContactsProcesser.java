@@ -371,6 +371,8 @@ public class CloudContactsProcesser {
 		List<Pair<String, Long>> numberIdPairList = new ArrayList<Pair<String,Long>>();
 		List<Long> contactIdList = new ArrayList<Long>();
 		for (String number : numberList) {    // 注：这个number可能是normalized number，也可能是普通的number，所以需要通过PhoneLookup查询
+		    if (TextUtils.isEmpty(number))
+		        continue;
 		    Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
 		    Cursor cursor = resolver.query(uri, new String[]{PhoneLookup._ID}, null, null, null);
 		    if (cursor == null)
