@@ -1,28 +1,31 @@
 package com.example.contactstest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.contactstest.core.CloudCallManager;
-import com.example.contactstest.core.CloudContactsProcesser;
-import com.example.contactstest.core.CloudSmsProcesser;
-
-import android.net.Uri;
-import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.provider.ContactsContract.CommonDataKinds.Phone;
-import android.provider.ContactsContract.CommonDataKinds.Photo;
-import android.provider.ContactsContract.Contacts;
-import android.text.TextUtils;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.CommonDataKinds.Photo;
+import android.provider.ContactsContract.Contacts;
+import android.util.Log;
+
+import com.example.contactstest.core.CloudSmsProcesser;
 
 public class MainActivity extends Activity {
+    
+    public static final String TAG = "ContactsTest";
 	private static final String[] PHONES_PROJECTION = new String[] {
 			Phone.DISPLAY_NAME, Phone.NUMBER, Photo.PHOTO_ID, Phone.CONTACT_ID };
 
@@ -36,7 +39,8 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 //		getContacts();
-		test();
+//		test();
+		testSimpleUriSetGet();
 	}
 	
 	private void test() {
@@ -109,4 +113,62 @@ public class MainActivity extends Activity {
 			phoneCursor.close();
 		}
 	}
+	
+	public void testContactPhoto() {
+        long rawContactId = 557;
+        String srcPhotoPath = Environment.getExternalStorageDirectory().getPath() + File.separator + "photo2.jpg";
+        String dstPhotoPath = Environment.getExternalStorageDirectory().getPath() + File.separator + "photo3.jpg";
+        
+        File srcPhoto = new File(srcPhotoPath);
+        new File(dstPhotoPath).delete();
+        
+        String md5_1 = RSAHelper.md5HexString(srcPhoto);
+        byte[] data = PhotoHelper.convertFile2Bytes(srcPhoto);
+        String md5_2 = RSAHelper.md5HexString(data);
+        
+//        PhotoHelper.setContactThumbnail(getApplicationContext(), rawContactId, data);
+        PhotoHelper.setDisplayPhoto(getApplicationContext(), rawContactId, srcPhoto);
+        
+        final Uri outputUri = Uri.withAppendedPath(
+                ContentUris.withAppendedId(ContactsContract.RawContacts.CONTENT_URI, rawContactId),
+                ContactsContract.RawContacts.DisplayPhoto.CONTENT_DIRECTORY);
+        data = PhotoHelper.getUriData(getApplicationContext(), outputUri);
+        String md5_3 = RSAHelper.md5HexString(data);
+        PhotoHelper.convertBytes2File(data, dstPhotoPath);
+        
+        String msg = md5_1 + "\n" + md5_2 + "\n" + md5_3;
+        Log.d(TAG, "" + msg);
+    }
+    
+    public void testSimpleUriSetGet() {
+        long rawContactId = 557;
+        String srcPhotoPath = Environment.getExternalStorageDirectory().getPath() + File.separator + "photo2.jpg";
+        String dstPhotoPath = Environment.getExternalStorageDirectory().getPath() + File.separator + "photo3.jpg";
+        File srcPhotoFile = new File(srcPhotoPath);
+        File dstPhotoFile = new File(dstPhotoPath);
+        dstPhotoFile.delete();
+        
+        Uri inputUri = Uri.fromFile(srcPhotoFile);
+        
+        // 测试1. 使用文件Uri
+//        final Uri outputUri = Uri.fromFile(new File(dstPhotoPath));
+        
+        // 测试2: 使用DisplayPhoto Uri
+        final Uri outputUri = Uri.withAppendedPath(
+                ContentUris.withAppendedId(ContactsContract.RawContacts.CONTENT_URI, rawContactId),
+                ContactsContract.RawContacts.DisplayPhoto.CONTENT_DIRECTORY);
+                
+        String md5_input = RSAHelper.md5HexString(srcPhotoFile);
+        PhotoHelper.setUriData(getApplicationContext(), inputUri, outputUri);
+        String md5_output = RSAHelper.md5HexString(PhotoHelper.getUriData(getApplicationContext(), outputUri));
+        String msg = md5_input + "\n" + md5_output;
+        Log.d(TAG, "" + msg);
+        
+        // Android源码做法：JPEG质量75压缩。得到的md5与以上DisplayPhoto Uri md5_output相同
+        Bitmap srcBitmap = BitmapFactory.decodeFile(srcPhotoPath);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        srcBitmap.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+        String md5_output2 = RSAHelper.md5HexString(baos.toByteArray());
+        Log.d(TAG, "" + md5_output2);
+    }
 }
